@@ -1,0 +1,105 @@
+@import url("./atoms.css");
+
+/* html,
+body {
+  padding: 0;
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen,
+    Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+@media (prefers-color-scheme: dark) {
+  html {
+    color-scheme: dark;
+  }
+
+  body {
+    color: white;
+    background: black;
+  }
+} */
+
+
+.board-grid {
+  display: grid;
+  grid-template-rows: repeat(8, 50px); /* Ajusta el número de filas si es necesario */
+  grid-template-columns: repeat(8, 50px); /* Ajusta el número de columnas si es necesario */
+}
+
+.board-row {
+  display: contents; /* Permite que los elementos hijos sigan el diseño de grid */
+}
+
+.cell {
+  width: 50px;
+  height: 50px;
+  border: 1px solid black;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.red {
+  background-color: red;
+}
+
+.blue {
+  background-color: blue;
+}
+
+.atoms-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 8px;
+}
+
+.atom {
+  width: 15px;
+  height: 15px;
+  background-color: white; /* Cambia esto según el color deseado */
+  border-radius: 50%;
+}
+
+.explosion {
+  width: 50px;
+  height: 50px;
+  background-color: yellow; /* Cambia esto según el color deseado */
+  border-radius: 50%;
+}
+
+
+/* 
+.game-rooms {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.game-room-card {
+  border: 1px solid #ddd;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  background-color: #fff;
+  width: 250px;
+}
+
+.game-room-card h3 {
+  margin: 0;
+  margin-bottom: 10px;
+  font-size: 1.2em;
+}
+
+.game-room-card p {
+  margin: 5px 0;
+} */
