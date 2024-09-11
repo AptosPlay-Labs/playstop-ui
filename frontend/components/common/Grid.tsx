@@ -11,7 +11,7 @@ interface GridProps {
   primaryColor: string;
 }
 
-const Grid: React.FC<GridProps> = ({ grid, isBet, handleClick, primaryColor }) => {
+const Grid: React.FC<GridProps> = ({ grid, isBet, handleClick }) => {
   return (
       <div className="board-grid">
         {grid.map((row, rowIndex) => (

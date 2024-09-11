@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useGameStore } from '../../store/gameStore';
 import { useWallet } from "@aptos-labs/wallet-adapter-react";
 import { doc, getDoc } from 'firebase/firestore';

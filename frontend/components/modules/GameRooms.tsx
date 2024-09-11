@@ -193,6 +193,7 @@ export function GameRooms() {
     setLoading(false);
   }
 
+  //@ts-ignore
   async function createNewGameRoom() {
     if (!account?.address) {
       alert('Player account?.address not found.');
@@ -221,6 +222,7 @@ export function GameRooms() {
     try {
       const gameRoomsCollection = collection(db, 'games');
       const docRef = await addDoc(gameRoomsCollection, initialData);
+      //@ts-ignore
       const newDocId = docRef.id;
     } catch (error) {
       console.error("Error creating new game room: ", error);

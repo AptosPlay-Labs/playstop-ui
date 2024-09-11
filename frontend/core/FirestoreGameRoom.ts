@@ -1,5 +1,5 @@
 import { db } from '../config/firebase';
-import { collection, limit, orderBy, query, where, onSnapshot, getDocs, doc } from 'firebase/firestore';
+import { collection, limit, orderBy, query, where, onSnapshot } from 'firebase/firestore';
 
 interface Player {
   color: string;

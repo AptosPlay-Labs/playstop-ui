@@ -1,24 +1,24 @@
 import ChainReactionIcon from "./ChainReactionIcon";
-import { notificateStore } from "@/store/notificateStore";
-import { Moon, Sun, Copy } from "lucide-react"; // Asumiendo que estás usando lucide-react para iconos
+//import { notificateStore } from "@/store/notificateStore";
+import { Moon, Sun } from "lucide-react"; // Asumiendo que estás usando lucide-react para iconos
 import { useTheme } from '../ThemeProvider';
 import { WalletSelector } from "../WalletSelector";
 
 export function Header() {
   const { theme, toggleTheme } = useTheme();
-  const { address } = notificateStore();
+  //const { address } = notificateStore();
 
   const toggleColorMode = () => {
     //setTheme(theme === "light" ? "dark" : "light");
     toggleTheme()
   };
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text).then(() => {
-      // Aquí podrías añadir una notificación de que se ha copiado correctamente
-      console.log("Copiado al portapapeles");
-    });
-  };
+  // const copyToClipboard = (text: string) => {
+  //   navigator.clipboard.writeText(text).then(() => {
+  //     // Aquí podrías añadir una notificación de que se ha copiado correctamente
+  //     console.log("Copiado al portapapeles");
+  //   });
+  // };
 
   return (
     //className="shadow-md bg-white dark:bg-gray-800"

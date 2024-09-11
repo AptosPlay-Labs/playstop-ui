@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useGameStore } from '../../store/gameStore';
 import { doc, getDoc, updateDoc, Timestamp, query, collection, where, getDocs } from 'firebase/firestore';
 import { db } from '../../config/firebase';
@@ -178,10 +178,10 @@ export function GameBoard() {
     if (currentRoom && game) {
         const playerQuery = query(collection(db, 'players'), where('wallet', '==', account?.address));
         const playerSnapshot = await getDocs(playerQuery);
-        let playerData: any = null;
-        playerSnapshot.forEach((doc) => {
-            playerData = doc.data();
-        });
+        //let playerData: any = null;
+        // playerSnapshot.forEach((doc) => {
+        //     playerData = doc.data();
+        // });
         const playerDocRef = doc(db, 'players', playerSnapshot.docs[0].id);
         await updateDoc(playerDocRef, { actualRoom: "" });
 
