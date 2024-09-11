@@ -13,10 +13,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: npm ci && npm run build
       - name: Create .env file
         run: |
-          echo "PROJECT_NAME=${{ secrets.PROJECT_NAME }}" >> .env
           echo "VITE_APP_NETWORK=${{ secrets.VITE_APP_NETWORK }}" >> .env
           echo "VITE_API_KEY=${{ secrets.VITE_API_KEY }}" >> .env
           echo "VITE_AUTH_DOMAIN=${{ secrets.VITE_AUTH_DOMAIN }}" >> .env
@@ -25,6 +23,7 @@ jobs:
           echo "VITE_MESSAGING_SENDER_ID=${{ secrets.VITE_MESSAGING_SENDER_ID }}" >> .env
           echo "VITE_APP_ID=${{ secrets.VITE_APP_ID }}" >> .env
           echo "VITE_MEASUREMENT_ID=${{ secrets.VITE_MEASUREMENT_ID }}" >> .env
+      - run: npm ci && npm run build
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
