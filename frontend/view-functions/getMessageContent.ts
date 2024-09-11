@@ -8,7 +8,7 @@ export const getMessageContent = async (): Promise<string> => {
         function: `${MODULE_ADDRESS}::message_board::get_message_content`,
       },
     })
-    .catch((error) => {
+    .catch((error:any) => {
       console.error(error);
       return ["message not exist"];
     });
