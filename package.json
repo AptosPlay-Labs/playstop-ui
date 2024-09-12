@@ -36,6 +36,7 @@
     "react-tabs": "^6.0.2",
     "tailwind-merge": "^2.3.0",
     "tailwindcss-animate": "^1.0.7",
+    "web-audio-daw": "^4.13.2",
     "zustand": "^4.5.5"
   },
   "devDependencies": {

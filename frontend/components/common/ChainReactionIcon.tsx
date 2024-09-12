@@ -1,7 +1,7 @@
 import { FC } from "react";
 
 const ChainReactionIcon: FC = () => (
-  <svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <svg width="50" height="50" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
     <circle cx="20" cy="20" r="10" fill="#FF5733" />
     <circle cx="80" cy="20" r="10" fill="#33FF57" />
     <circle cx="50" cy="50" r="10" fill="#3357FF" />

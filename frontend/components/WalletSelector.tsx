@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/components/ui/use-toast";
 import { notificateStore } from "@/store/notificateStore";
+import { motion } from "framer-motion";
 
 export function WalletSelector() {
   const { account, connected, disconnect, wallet } = useWallet();
@@ -59,7 +60,13 @@ export function WalletSelector() {
   return connected ? (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button>{account?.ansName || truncateAddress(account?.address) || "Unknown"}</Button>
+        <motion.button 
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              className="text-white hover:text-yellow-300 transition-colors"
+            >
+          <button className="button-19">{account?.ansName || truncateAddress(account?.address) || "Unknown"}</button>
+        </motion.button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuItem onSelect={copyAddress} className="gap-2">
@@ -80,7 +87,13 @@ export function WalletSelector() {
   ) : (
     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
       <DialogTrigger asChild>
-        <Button>Connect a Wallet</Button>
+        <motion.button 
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              className="text-white hover:text-yellow-300 transition-colors"
+            >
+          <button className="button-19">Connect a Wallet</button>
+        </motion.button>
       </DialogTrigger>
       <ConnectWalletDialog close={closeDialog} />
     </Dialog>

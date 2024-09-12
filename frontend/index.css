@@ -1,7 +1,10 @@
+@import url("https://fonts.googleapis.com/css2?family=Balsamiq+Sans:wght@400;700&display=swap");
+@import url("./styles/globals.css");
+@import url('https://fonts.googleapis.com/css?family=Carter+One');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
 
 @layer base {
   :root {
@@ -74,5 +77,6 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: 'Balsamiq Sans', sans-serif;
   }
 }

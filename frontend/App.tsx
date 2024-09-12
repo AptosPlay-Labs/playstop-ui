@@ -8,53 +8,72 @@
 // import { AccountInfo } from "@/components/AccountInfo";
 // import { TransferAPT } from "@/components/TransferAPT";
 // import { MessageBoard } from "@/components/MessageBoard";
-
-import { notificateStore } from "@/store/notificateStore";
-import { GameBoard, GameRooms, GameBoardVisual } from "@/components/modules";
 import {Layout} from "@/components/common"
+//import { ColorWar } from "./ColorWar";
+import { motion } from 'framer-motion';
+import { ColorWar } from './ColorWar';
+import { useState } from "react";
 
+const games = [
+  { name: 'COLOR WAR', id:"color-war", color: 'from-yellow-400 to-yellow-600', img:"./images/color-war.png"},
+  // { name: 'GHOST ATTACK', color: 'from-purple-500 to-indigo-600', svg: <path d="M12,2A9,9 0 0,0 3,11V22L6,19L9,22L12,19L15,22L18,19L21,22V11A9,9 0 0,0 12,2M9,8A2,2 0 0,1 11,10A2,2 0 0,1 9,12A2,2 0 0,1 7,10A2,2 0 0,1 9,8M15,8A2,2 0 0,1 17,10A2,2 0 0,1 15,12A2,2 0 0,1 13,10A2,2 0 0,1 15,8Z" /> },
+  // { name: 'STICKMAN RUN', color: 'from-blue-400 to-cyan-300', svg: <path d="M17.5,4.5C17.5,5.6 16.6,6.5 15.5,6.5C14.4,6.5 13.5,5.6 13.5,4.5C13.5,3.4 14.4,2.5 15.5,2.5C16.6,2.5 17.5,3.4 17.5,4.5M15,8V16H13V8H11L8,10V12H10L11,11V16H9V21H11V18H13V21H15V18H17V8H15Z" /> },
+  // { name: 'TANK BATTLE', color: 'from-yellow-400 to-yellow-600', svg: <path d="M20,10H4V17H20V10M20,19H4V21H20V19M9,11H5V15H9V11M19,7V4H9V7H19Z" /> },
+  // { name: 'RACE', color: 'from-red-500 to-red-700', svg: <path d="M5,11L6.5,6.5H17.5L19,11M17.5,16A1.5,1.5 0 0,1 16,14.5A1.5,1.5 0 0,1 17.5,13A1.5,1.5 0 0,1 19,14.5A1.5,1.5 0 0,1 17.5,16M6.5,16A1.5,1.5 0 0,1 5,14.5A1.5,1.5 0 0,1 6.5,13A1.5,1.5 0 0,1 8,14.5A1.5,1.5 0 0,1 6.5,16M18.92,6C18.72,5.42 18.16,5 17.5,5H6.5C5.84,5 5.28,5.42 5.08,6L3,12V20A1,1 0 0,0 4,21H5A1,1 0 0,0 6,20V19H18V20A1,1 0 0,0 19,21H20A1,1 0 0,0 21,20V12L18.92,6Z" /> },
+  // { name: 'SOCCER', color: 'from-green-500 to-green-700', svg: <path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,3C13.76,3 15.4,3.53 16.78,4.41L16.5,5H13.5L12,7.5L10.5,5H7.5L7.22,4.41C8.6,3.53 10.24,3 12,3M6.5,5.89L9,10L6,13L3.34,11.66C3.12,11.31 2.96,10.93 2.84,10.54L6.5,5.89M17.5,5.89L21.16,10.54C21.04,10.93 20.88,11.31 20.66,11.66L18,13L15,10L17.5,5.89M12,10A2,2 0 0,1 14,12A2,2 0 0,1 12,14A2,2 0 0,1 10,12A2,2 0 0,1 12,10M7,16L10,13.5L12,15L14,13.5L17,16L15.5,19H8.5L7,16Z" /> },
+  
+  // ... Add more games with appropriate colors and SVGs
+];
+
+//@ts-ignore
+const GameCard = ({ name, color, img }) => (
+  <motion.div 
+    whileHover={{ scale: 1.05 }}
+    whileTap={{ scale: 0.95 }}
+    className="aspect-square"
+  >
+    <div className={`trapezoidal-card w-full h-70 bg-gradient-to-br ${color} flex flex-col items-center justify-center p-4`}>
+      {/* <svg viewBox="0 0 24 24" className="w-20 h-20 text-white mb-2">
+        {svg}
+      </svg> */}
+      <img className="transform scale-125 -mt-6 mb-5" src={img} alt=""/>
+      <div className="font-bold text-white text-center text-xl">{name}</div>
+
+    </div>  
+  </motion.div>
+);
 
 function App() {
   //const { account } = useWallet();
-  const { currentRoom, isSpectator } = notificateStore();
+  const [selectedGame, setSelectedGame] = useState(null);
+
+  const handleCardClick = (gameId:any) => {
+    setSelectedGame(gameId);
+  };
 
   return (
     <Layout>
-      {/* <Header /> */}
-      <div className="flex items-center justify-center flex-col">
-      <div className="flex justify-center">
-        {(!currentRoom || isSpectator) && (
-          <div className="mx-2">
-            <GameRooms/>
+      {/* <ColorWar/> */}
+      {(selectedGame=="color-war") && (
+          <ColorWar/>
+      )}
+      {(!selectedGame) && (      
+        <div className="min-h-screen bg-gradient-to-br from-purple-600 to-indigo-700 p-8">
+          <div className="max-w-7xl mx-auto"> 
+
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-12 p-8">
+              {games.map((game, index) => (
+                <div onClick={() => handleCardClick(game.id)} >
+                  <GameCard key={index} name={game.name} color={game.color} img={game.img}/>  
+                </div>
+              ))}
+            </div>
+            {/* <div className='space-invader'></div> */}
+
           </div>
-        )}
-        {(currentRoom && !isSpectator) && (
-          <div className="mx-2">
-            <GameBoard/>
-          </div>
-        )}
-        {(currentRoom && isSpectator) && (
-          <div className="mx-2">
-            <GameBoardVisual/>
-          </div>
-        )}
-      </div>
-        {/* {connected ? (
-          <Card>
-            <CardContent className="flex flex-col gap-10 pt-6">
-              <WalletDetails />
-              <NetworkInfo />
-              <AccountInfo />
-              <TransferAPT />
-              <MessageBoard />
-            </CardContent>
-          </Card>
-        ) : (
-          <CardHeader>
-            <CardTitle>To get started Connect a wallet</CardTitle>
-          </CardHeader>
-        )} */}
-      </div>
+
+        </div>
+      )}  
     </Layout>
   );
 }

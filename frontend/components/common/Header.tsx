@@ -1,4 +1,4 @@
-import ChainReactionIcon from "./ChainReactionIcon";
+// import ChainReactionIcon from "./ChainReactionIcon";
 //import { notificateStore } from "@/store/notificateStore";
 import { Moon, Sun } from "lucide-react"; // Asumiendo que estás usando lucide-react para iconos
 import { useTheme } from '../ThemeProvider';
@@ -26,8 +26,9 @@ export function Header() {
       <div className="container mx-auto px-4 py-4">
         <div className="flex justify-between items-center">
           <div className="flex items-center space-x-4">
-            <ChainReactionIcon />
-            <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Reactives.fun</h1>
+            {/* <ChainReactionIcon /> */}
+            <img className="w-16 h-16" src="./favicon.png" alt="" />
+            <h1 className="text-2xl font-bold text-gray-800 dark:text-white">PlayStop Funny</h1>
           </div>
           
           
@@ -52,10 +53,10 @@ export function Header() {
           </div>
         </div>
         
-        <div className="mt-6 text-center">
-          <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Welcome to Reactives Chain Funny</h2>
-          <p className="mt-2 text-lg text-gray-600 dark:text-gray-300">A GameFi on Aptos PvP</p>
-        </div>
+        {/* <div className="mt-1 text-center">
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Welcome to PlayStop Funny</h2>
+          <p className="mt-2 text-lg text-gray-600 dark:text-gray-300">A gameFi on Aptos PvP</p>
+        </div> */}
       </div>
     </header>
   );

@@ -2,7 +2,7 @@ import React from 'react';
 import Atom from './Atom';
 import Atom3d from './Atom3d';
 import ExplodingCell from './ExplodingCell';
-import '../../styles/globals.css';
+// import '../../styles/globals.css';
 
 interface GridProps {
   grid: any[];
