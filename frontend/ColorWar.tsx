@@ -10,7 +10,7 @@ const BackArrow = () => (
 );
 
 export function ColorWar() {
-    const { currentRoom, isSpectator } = notificateStore();
+    const { currentRoom, isSpectator ,setSelectedGame} = notificateStore();
 
     return (
         <div>
@@ -19,11 +19,13 @@ export function ColorWar() {
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
                 className="text-white hover:text-yellow-300 transition-colors"
+                onClick={()=>setSelectedGame(null)}
               >
-                <BackArrow />
+                {/* <BackArrow /> */}
                 {/* <svg xmlns="http://www.w3.org/2000/svg" width="200" height="60" viewBox="0 0 100 60" fill="none">
                 <path d="M110 30 Q110 20 100 20 L50 20 Q52 20 52 18 L52 12 Q52 5 45 5 Q40 5 35 10 Q2 30 35 50 Q40 55 45 55 Q52 55 52 48 L52 42 Q52 40 50 40 L100 40 Q110 40 110 30 Z" fill="#D4E2FF" stroke="black" stroke-width="2"/>
                 </svg> */}
+                <img className="w-16" src="./images/arrow-left.svg" alt="" />
               </motion.button>
               
               <div className="text-2xl font-bold text-white ml-2">Back</div>

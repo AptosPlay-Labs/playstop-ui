@@ -13,10 +13,15 @@ import {Layout} from "@/components/common"
 import { motion } from 'framer-motion';
 import { ColorWar } from './ColorWar';
 import { useState } from "react";
+import { notificateStore } from "./store/notificateStore";
+import DinamiteGame from "./DinamiteGame";
+import DinamiteGameFabric from "./DinamiteGameFabric";
+import DinamiteReactPixi from "./DinamiteReactPixi";
+import DinamiteGameV2 from "./DinamiteGameV2";
 
 const games = [
   { name: 'COLOR WAR', id:"color-war", color: 'from-yellow-400 to-yellow-600', img:"./images/color-war.png"},
-  // { name: 'GHOST ATTACK', color: 'from-purple-500 to-indigo-600', svg: <path d="M12,2A9,9 0 0,0 3,11V22L6,19L9,22L12,19L15,22L18,19L21,22V11A9,9 0 0,0 12,2M9,8A2,2 0 0,1 11,10A2,2 0 0,1 9,12A2,2 0 0,1 7,10A2,2 0 0,1 9,8M15,8A2,2 0 0,1 17,10A2,2 0 0,1 15,12A2,2 0 0,1 13,10A2,2 0 0,1 15,8Z" /> },
+  { name: 'DINAMITE', id:"dinamite", color: 'from-purple-400 to-purple-600', img:"./images/dinamite.png"}
   // { name: 'STICKMAN RUN', color: 'from-blue-400 to-cyan-300', svg: <path d="M17.5,4.5C17.5,5.6 16.6,6.5 15.5,6.5C14.4,6.5 13.5,5.6 13.5,4.5C13.5,3.4 14.4,2.5 15.5,2.5C16.6,2.5 17.5,3.4 17.5,4.5M15,8V16H13V8H11L8,10V12H10L11,11V16H9V21H11V18H13V21H15V18H17V8H15Z" /> },
   // { name: 'TANK BATTLE', color: 'from-yellow-400 to-yellow-600', svg: <path d="M20,10H4V17H20V10M20,19H4V21H20V19M9,11H5V15H9V11M19,7V4H9V7H19Z" /> },
   // { name: 'RACE', color: 'from-red-500 to-red-700', svg: <path d="M5,11L6.5,6.5H17.5L19,11M17.5,16A1.5,1.5 0 0,1 16,14.5A1.5,1.5 0 0,1 17.5,13A1.5,1.5 0 0,1 19,14.5A1.5,1.5 0 0,1 17.5,16M6.5,16A1.5,1.5 0 0,1 5,14.5A1.5,1.5 0 0,1 6.5,13A1.5,1.5 0 0,1 8,14.5A1.5,1.5 0 0,1 6.5,16M18.92,6C18.72,5.42 18.16,5 17.5,5H6.5C5.84,5 5.28,5.42 5.08,6L3,12V20A1,1 0 0,0 4,21H5A1,1 0 0,0 6,20V19H18V20A1,1 0 0,0 19,21H20A1,1 0 0,0 21,20V12L18.92,6Z" /> },
@@ -45,7 +50,9 @@ const GameCard = ({ name, color, img }) => (
 
 function App() {
   //const { account } = useWallet();
-  const [selectedGame, setSelectedGame] = useState(null);
+  //const [selectedGame, setSelectedGame] = useState(null);
+  const {selectedGame, setSelectedGame } = notificateStore();
+
 
   const handleCardClick = (gameId:any) => {
     setSelectedGame(gameId);
@@ -56,6 +63,14 @@ function App() {
       {/* <ColorWar/> */}
       {(selectedGame=="color-war") && (
           <ColorWar/>
+      )}
+      {(selectedGame=="dinamite") && (
+          // <DinamiteGameFabric/>
+          // <DinamiteGame/>
+          <DinamiteGameFabric/>
+          // <DinamiteGameV2/>
+          // <DinamiteGamePixi/>
+          //<DinamiteReactPixi/>
       )}
       {(!selectedGame) && (      
         <div className="min-h-screen bg-gradient-to-br from-purple-600 to-indigo-700 p-8">

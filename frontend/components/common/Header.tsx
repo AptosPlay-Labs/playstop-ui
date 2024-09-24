@@ -22,13 +22,14 @@ export function Header() {
 
   return (
     //className="shadow-md bg-white dark:bg-gray-800"
-    <header> 
+    <header className="z-10"> 
       <div className="container mx-auto px-4 py-4">
         <div className="flex justify-between items-center">
           <div className="flex items-center space-x-4">
             {/* <ChainReactionIcon /> */}
             <img className="w-16 h-16" src="./favicon.png" alt="" />
-            <h1 className="text-2xl font-bold text-gray-800 dark:text-white">PlayStop Funny</h1>
+            {/* <h1 className="text-2xl font-bold text-gray-800 dark:text-white">PlayStop.fun</h1> */}
+            <h1 className="text-2xl font-bold text-gray-800 dark:text-[#46dc8e]">PlayStop.fun</h1>
           </div>
           
           
@@ -54,7 +55,7 @@ export function Header() {
         </div>
         
         {/* <div className="mt-1 text-center">
-          <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Welcome to PlayStop Funny</h2>
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Welcome to PlayStop.fun</h2>
           <p className="mt-2 text-lg text-gray-600 dark:text-gray-300">A gameFi on Aptos PvP</p>
         </div> */}
       </div>

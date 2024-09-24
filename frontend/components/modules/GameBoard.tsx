@@ -9,18 +9,27 @@ import {LoadingScreen} from "../common/LoadingScreen";
 import Grid from '../common/Grid';
 import { FirestoreGame } from '@/core/firebaseGame';
 import { useWallet } from "@aptos-labs/wallet-adapter-react";
-
+import WonOrLostModal from '../common/WonOrLostModal';
 
 export function GameBoard() {
   const [onlyValidation, setOnlyValidation] = useState(0);
   const { account } = useWallet();
+
   const { game, grid, currentPlayer, initializeGame, addAtom, players } = useGameStore();
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const [gameStarted, setGameStarted] = useState(false);
   const [waitingForOpponent, setWaitingForOpponent] = useState(false);
   const { currentRoom, isSpectator } = notificateStore();
-  const { setNotifyCurrentRoom, setIsSpectator } = notificateStore();
+  const { selectedGame, setNotifyCurrentRoom, setIsSpectator } = notificateStore();
   const [loading, setLoading] = useState<boolean>(false);
+  const [isModalOpen, setModalOpen] = useState(false);
+  const [isWon, setIsWon] = useState(false);
+  const [wonAmount, setWonAmount] = useState(0);
+  const [statusGame, setStatusGame] = useState('');
+  const [roomCodeContract, setRoomCodeContract] = useState(0);
+  const [isBettingRoom, setIsBettingRoom] = useState(false);
+
+  const winner = players.find(player => player.winner==true);
 
   useEffect(() => {
     setOnlyValidation(0)
@@ -33,28 +42,28 @@ export function GameBoard() {
         const docSnap = await getDoc(gameDoc);
         if (docSnap.exists()) {
           const data = docSnap.data();
-          const winner = data.players.find((vl:any) => vl.winner===true);
-          if (data.status === 'waiting' && !winner) {
-            initializeGame(8, 8, currentRoom, data.players);
-          } 
-          if (data.status === 'live' && !winner) {
-            initializeGame(8, 8, currentRoom, data.players);
-          }
-          if (data.status === 'completed' && winner) {
-            initializeGame(8, 8, currentRoom, data.players);
-          }
+          //const winner = data.players.find((vl:any) => vl.winner===true);
+          initializeGame(8, 8, currentRoom, data.players);
+          // if (data.status === 'waiting' && !winner) {
+          //   initializeGame(8, 8, currentRoom, data.players);
+          // } 
+          // if (data.status === 'live' && !winner) {
+          //   initializeGame(8, 8, currentRoom, data.players);
+          // }
+          // if (data.status === 'completed' && winner) {
+          //   initializeGame(8, 8, currentRoom, data.players);
+          // }
           
-          else {
-            console.log("El juego ha finalizado.");
-          }
+          // else {
+          //   console.log("El juego ha finalizado.");
+          // }
         }
       };
       fetchGame();
     }
-  }, [currentRoom, initializeGame, account?.address]);
+  }, [currentRoom, initializeGame, account?.address, selectedGame]);
 
   useEffect(() => {
-    
     const timer = setInterval(() => {
       const winner = game?.players.find(player => player.winner==true);
       if (!winner && game && game.turnEndTime) {
@@ -68,8 +77,21 @@ export function GameBoard() {
     }, 1000);
     return () => clearInterval(timer);
     
-  }, [game, account?.address]);
+  }, [game, account?.address, selectedGame]);
 
+  useEffect(() => {
+    if(game?.status == 'live' && winner){
+      if(winner.wallet==account?.address){
+        let amount = parseFloat(game?.betAmount) 
+        //console.log(game?.isBettingRoom)
+        let statusGame = `${winner.moves}winner`
+        let roomCodeContract = game?.roomIdContract
+        modalWonOrLostModal(amount,game?.isBettingRoom,statusGame,roomCodeContract,true)
+      }else{
+        modalWonOrLostModal(0,game?.isBettingRoom,'',0,false)
+      }
+    }
+  }, [winner, account?.address, selectedGame]);
 
   async function updatPLayer(game:FirestoreGame, isExit:Boolean){
 
@@ -95,8 +117,8 @@ export function GameBoard() {
     }
     
     if( game && winner && game.status === "live" && (lost?.wallet === account?.address||isExit)){
-      console.log("lost")
-    console.log(lost?.wallet)
+      //console.log("lost")
+      //console.log(lost?.wallet)
         const playerQuery = query(collection(db, 'players'), where('wallet', '==', lost?.wallet));
         const playerSnapshot = await getDocs(playerQuery);
         if(!playerSnapshot.empty){
@@ -113,7 +135,6 @@ export function GameBoard() {
   }
 
   useEffect(() => {
-    
     const winner = game?.players.find(player => player.winner==true);
     if (game && players.length >= 2 && players.every(player => player.play === true) && game.status && game.status !== "live" && !game?.turnEndTime && !winner) {
       game.turnEndTime = Timestamp.now().toMillis() + 30000; // 30 segundos en el futuro
@@ -122,10 +143,11 @@ export function GameBoard() {
       setGameStarted(true);
     }
   
-    if (winner && game && game.status && game.status !== "completed") {
-        updatPLayer(game!, false)
-        game.completeGame(); // Cambiar el estado a "completed"
-    }
+
+    // if (winner && game && game.status && game.status !== "completed") {
+    //     updatPLayer(game, false)
+    //     game.completeGame(); // Cambiar el estado a "completed"
+    // }
   
     if (game && players.length >= 2 && players.every(player => player.play === true)) {
       setWaitingForOpponent(false);
@@ -171,8 +193,6 @@ export function GameBoard() {
     return `${addr.substring(0, 6)}...${addr.substring(addr.length - 8)}`;
   };
 
-  const winner = players.find(player => player.winner==true);
-
   const exitGame = async () => {
     setLoading(true)
     if (currentRoom && game) {
@@ -196,7 +216,9 @@ export function GameBoard() {
             await updatPLayer(game, true)
             await updateDoc(game.gameDoc, { players: game.players, status: "completed" });
             
-        }if ( game.status === "waiting") {
+        }
+        
+        if ( game.status === "waiting") {
             //revisar en caso sea mas de 2 jugadores, aqui solo se esta mateneindo los jugadores que se queden en el juego
             let playerList = game.players.filter(vl => vl.wallet !== account?.address);
             let playerAddress = playerList.map(player => player.wallet) //aqui que retorno ["",""] los adres asi
@@ -218,6 +240,14 @@ export function GameBoard() {
 
   const { theme } = useTheme();
 
+  function modalWonOrLostModal(amount:any, isBet:any, status_game:string, room_code:number, is_won:boolean){
+    setIsBettingRoom(isBet)
+    setWonAmount(amount)
+    setIsWon(is_won)
+    setModalOpen(true)
+    setStatusGame(status_game)
+    setRoomCodeContract(room_code)
+  }
 
   const textStyle = {
     color: theme === 'light' ? '#1a202c' : '#ffffff',
@@ -285,6 +315,16 @@ export function GameBoard() {
           Exit
         </button>
       )}
+
+      <WonOrLostModal
+        isOpen={isModalOpen}
+        amount= {wonAmount}
+        isBet = {isBettingRoom}
+        isWon={isWon}
+        status_game = {statusGame}
+        room_code_contract = {roomCodeContract}
+        onClose={() => setModalOpen(false)}
+      />
     </div>
   );
 }

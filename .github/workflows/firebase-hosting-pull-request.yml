@@ -16,6 +16,8 @@ jobs:
       - name: Create .env file
         run: |
           echo "VITE_APP_NETWORK=${{ secrets.VITE_APP_NETWORK }}" >> .env
+          echo "VITE_MODULE_ADDRESS=${{ secrets.VITE_MODULE_ADDRESS }}" >> .env
+          echo "VITE_PRIVATE_KEY=${{ secrets.VITE_PRIVATE_KEY }}" >> .env
           echo "VITE_API_KEY=${{ secrets.VITE_API_KEY }}" >> .env
           echo "VITE_AUTH_DOMAIN=${{ secrets.VITE_AUTH_DOMAIN }}" >> .env
           echo "VITE_PROJECT_ID=${{ secrets.VITE_PROJECT_ID }}" >> .env

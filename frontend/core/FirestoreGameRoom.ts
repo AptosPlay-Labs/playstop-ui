@@ -16,6 +16,8 @@ interface GameRoom {
   turnEndTime: string;
   winnerWallet: string | null;
   isBettingRoom: boolean;
+  roomIdContract:number;
+  betAmount:any;
   status: string | null;
   playersWallets: string[];
   createRoomTime: number; // Timestamp in milliseconds
@@ -47,6 +49,8 @@ class BettingGames {
           turnEndTime: data.turnEndTime,
           winnerWallet: data.players.find((player: Player) => player.winner)?.wallet || null,
           isBettingRoom: data.isBettingRoom || false,
+          roomIdContract: data.roomIdContract,
+          betAmount: data.betAmount,
           playersWallets: data.playersWallets || [],
           createRoomTime: data.createRoomTime.toMillis()
         };
@@ -88,6 +92,8 @@ class NonBettingGames {
           turnEndTime: data.turnEndTime,
           winnerWallet: data.players.find((player: Player) => player.winner)?.wallet || null,
           isBettingRoom: data.isBettingRoom || false,
+          roomIdContract: data.roomIdContract,
+          betAmount: data.betAmount,
           playersWallets: data.playersWallets || [],
           createRoomTime: data.createRoomTime.toMillis()
         };
@@ -128,6 +134,8 @@ class MyGames {
           turnEndTime: data.turnEndTime,
           winnerWallet: data.players.find((player: Player) => player.winner)?.wallet || null,
           isBettingRoom: data.isBettingRoom || false,
+          roomIdContract: data.roomIdContract,
+          betAmount: data.betAmount,
           playersWallets: data.playersWallets || [],
           createRoomTime: data.createRoomTime.toMillis()
         };

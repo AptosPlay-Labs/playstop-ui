@@ -20,6 +20,8 @@ class FirestoreGame extends ChainReactionGame {
         const parsedGrid = JSON.parse(data.grid) as Cell[][];
         this.grid = parsedGrid;
         this.isBettingRoom = data.isBettingRoom;
+        this.betAmount = data.betAmount;
+        this.roomIdContract = data.roomIdContract;
         this.currentPlayerWallet = data.currentPlayerWallet;
         this.turnEndTime = data.turnEndTime ? data.turnEndTime.toMillis() : null;
         this.players = data.players;
@@ -33,6 +35,9 @@ class FirestoreGame extends ChainReactionGame {
           this.turnEndTime = data.turnEndTime ? data.turnEndTime.toMillis() : null;
           this.players = data.players;
           this.status = data.status;
+          this.isBettingRoom = data.isBettingRoom;
+          this.roomIdContract = data.roomIdContract;
+          this.betAmount = data.betAmount;
           let grid = Array.from({ length: rows }, () =>
             Array.from({ length: cols }, () => ({ player: null, count: 0 }))
           );

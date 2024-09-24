@@ -13,6 +13,12 @@ import { addDoc, collection, updateDoc, doc, getDocs, query, where, Timestamp, o
 //import { useChain } from '@cosmos-kit/react';
 import { notificateStore } from '@/store/notificateStore';
 import { LoadingScreen } from "../common/LoadingScreen";
+import { aptosClient } from "@/utils/aptosClient";
+import { ChainReactionGame } from '@/entry-functions/ChainReactionGame';
+import CreateRoomModal from '../common/CreateRoomModal';
+import { GameButton } from '../ui/GameButton';
+import { toast } from '../ui/use-toast';
+
 
 export function GameRooms() {
   const [roomsNoBet, setRoomsNoBet] = useState<GameRoom[]>([]);
@@ -22,10 +28,12 @@ export function GameRooms() {
   const [currentRoom, setCurrentRoom] = useState<any>(null);
   //const primaryColor = useColorModeValue("#000000", "#FFFFFF");
   //const { status, account?.address } = useChain(chainName);
-  const { account } = useWallet();
-  const { setNotifyCurrentRoom, setIsSpectator } = notificateStore();
+  const { account, signAndSubmitTransaction } = useWallet();
+  const { selectedGame, setNotifyCurrentRoom, setIsSpectator } = notificateStore();
   const [loading, setLoading] = useState<boolean>(false);
-  
+  const [isModalOpen, setModalOpen] = useState(false);
+  const [isBettingRoom, setIsBettingRoom] = useState(false);
+
   useEffect(() => {
     // [1,2,3,4,5,6,7,8].map(vl=>{
     //   createNewGameRoom()
@@ -84,19 +92,23 @@ export function GameRooms() {
           orderBy('createRoomTime', 'desc'));
 
         const gameSnapshot = await getDocs(gameQuery);
-
+        
+        
         if (!gameSnapshot.empty) {
           gameSnapshot.forEach((doc_game) => {
             const gameData = doc_game.data();
             if (gameData.players.some((player: Player) => player.wallet === account?.address)) {
+
               querySnapshot.forEach((vl) => {
                 const playerData = vl.data();
+                console.log(playerData)
                 if (playerData.actualRoom && playerData.actualRoom === doc_game.id) {
                   setCurrentRoom(playerData.actualRoom);
                   setNotifyCurrentRoom(playerData.actualRoom);
                   setIsSpectator(false);
                 }
               });
+
             }
           });
         } else {
@@ -111,9 +123,9 @@ export function GameRooms() {
           }
 
           setCurrentRoom(null);
-        //   if (rooms.length > 0 && rooms[0].status === 'live') {
-        //     setNotifyCurrentRoom(rooms[0].id);
-        //   }
+          //   if (rooms.length > 0 && rooms[0].status === 'live') {
+          //     setNotifyCurrentRoom(rooms[0].id);
+          //   }
           setIsSpectator(true);
         }
 
@@ -128,16 +140,45 @@ export function GameRooms() {
     }
 
     checkCurrentRoom();
-  }, [account?.address]);
+  }, [account?.address, selectedGame]);
+
+  async function joinRoomContract(roomId:any){
+      try {
+          const committedTransaction = await signAndSubmitTransaction(
+              ChainReactionGame.joinRoom(roomId)
+          );
+          const executedTransaction = await aptosClient().waitForTransaction({
+            transactionHash: committedTransaction.hash,
+          });
+
+          console.log(executedTransaction)
+
+          toast({
+            title: "Success",
+            description: `Succeeded, hash: ${executedTransaction.hash}`,
+          });
+          return executedTransaction.success
+        } catch (error) {
+          console.error(error);
+          toast({
+              title: "Error",
+              description: `Transaction contract error`,
+            });
+          return false
+        }
+  }
 
   async function joinGame(room: GameRoom) {
     setLoading(true);
     if (!account?.address) {
-      alert('Please connect your wallet to proceed.');
+      toast({
+        title: "Error",
+        description: `Please connect your wallet to proceed.`,
+      });
       setLoading(false);
       return;
     }
-
+    
     const playerQuery = query(collection(db, 'players'), where('wallet', '==', account?.address));
     const playerSnapshot = await getDocs(playerQuery);
     let playerData: any = null;
@@ -158,75 +199,58 @@ export function GameRooms() {
     });
 
     if ((playerData && playerData.actualRoom && playerData.actualRoom) ||
-      (existingGame && existingGame.id)) {
-      alert('You are already in another room.');
+      (existingGame && existingGame.id)) { 
+      toast({
+        title: "Error",
+        description: 'You are already in another room.',
+      });
       return;
     }
 
-    if (room.players.length < room.totalPlayers && room.grid === "") {
-      const gameDocRef = doc(db, 'games', room.id);
-      const newPlayer = {
-        color: room.players.length === 0 ? 'red' : 'blue',
-        moves: 0,
-        play: false,
-        wallet: account?.address,
-        winner: false,
-      };
-      let newCurrentplayer = (existingGame && existingGame.currentPlayerWallet && (existingGame.currentPlayerWallet !== "")) ? existingGame.currentPlayerWallet : account?.address;
+    console.log(room.roomIdContract)
+    let contractSucces = await  joinRoomContract(room.roomIdContract)
 
-      //esto uede generar error en caso se unan 2 usuarios al mismo tiempo.
-      await updateDoc(gameDocRef, { players: [...room.players, newPlayer],
-        playersWallets: [...room.playersWallets, account?.address],
-        currentPlayerWallet: newCurrentplayer });
+    if(contractSucces){
+      if (room.players.length < room.totalPlayers && room.grid === "") {
+        const gameDocRef = doc(db, 'games', room.id);
+        const newPlayer = {
+          color: room.players.length === 0 ? 'red' : 'blue',
+          moves: 0,
+          play: false,
+          wallet: account?.address,
+          winner: false,
+        };
+        let newCurrentplayer = (existingGame && existingGame.currentPlayerWallet && (existingGame.currentPlayerWallet !== "")) ? existingGame.currentPlayerWallet : account?.address;
 
-      if (playerData) {
-        const playerDocRef = doc(db, 'players', playerSnapshot.docs[0].id);
-        await updateDoc(playerDocRef, { actualRoom: room.id });
+      
+        //esto uede generar error en caso se unan 2 usuarios al mismo tiempo.
+        await updateDoc(gameDocRef, { players: [...room.players, newPlayer],
+          playersWallets: [...room.playersWallets, account?.address],
+          currentPlayerWallet: newCurrentplayer });
+
+        if (playerData) {
+          const playerDocRef = doc(db, 'players', playerSnapshot.docs[0].id);
+          await updateDoc(playerDocRef, { actualRoom: room.id });
+        }
+
+        //aqui enivar al contrato transaccion
+
+        setCurrentRoom(room.id);
+        setNotifyCurrentRoom(room.id);
+        setIsSpectator(false);
+      } else {
+        toast({
+          title: "Error",
+          description: `Unable to join this room.`,
+        });
       }
-
-      setCurrentRoom(room.id);
-      setNotifyCurrentRoom(room.id);
-      setIsSpectator(false);
-    } else {
-      alert('Unable to join this room.');
+    }else{
+      toast({
+        title: "Error",
+        description: `error Join room in contract`,
+      });
     }
     setLoading(false);
-  }
-
-  //@ts-ignore
-  async function createNewGameRoom() {
-    if (!account?.address) {
-      alert('Player account?.address not found.');
-      return;
-    }
-
-    const initialData = {
-      currentPlayerWallet: "",//account?.address,
-      grid: "",
-      players: [
-        // {
-        //   color: "red",
-        //   moves: 0,
-        //   play: false,
-        //   wallet: account?.address,
-        //   winner: false
-        // }
-      ],
-      playersWallets:[],
-      totalPlayers: 2,
-      isBettingRoom: true,
-      createRoomTime: Timestamp.now(),
-      status:"waiting"
-    };
-
-    try {
-      const gameRoomsCollection = collection(db, 'games');
-      const docRef = await addDoc(gameRoomsCollection, initialData);
-      //@ts-ignore
-      const newDocId = docRef.id;
-    } catch (error) {
-      console.error("Error creating new game room: ", error);
-    }
   }
 
   async function viewGamePlay(room_id: any) {
@@ -235,6 +259,16 @@ export function GameRooms() {
     setIsSpectator(true);
     setLoading(false);
   }
+
+  function modalCreateRoom(isbet:boolean){
+    setIsBettingRoom(isbet)
+    setModalOpen(true)
+  }
+
+  const formatAddress = (addr: string | undefined) => {
+    if (!addr) return '';
+    return `${addr.substring(0, 6)}...${addr.substring(addr.length - 8)}`;
+  };
 
   return (
     <div className="min-w-[650px]">
@@ -249,25 +283,39 @@ export function GameRooms() {
 
         <TabPanel>
           <div className="max-h-[420px] min-w-[450px] pr-[10px] overflow-y-auto">
+            <div className='flex m-2 items-center justify-between'>
+              <div>
+                Create new game room
+              </div>
+              <div onClick={()=>modalCreateRoom(false)}>
+                <GameButton onClick={()=>{}} color="bg-blue-500" color_hover="bg-blue-550" className='border-blue-700'>
+                  Create
+                </GameButton>
+              </div>
+            </div>
             {roomsNoBet.filter(room => !room.isBettingRoom).map((room, index) => (
               <div key={room.id} className="border border-green-400 rounded-3xl p-4 mb-4 shadow-md">
-                <h3 className="text-xl mb-2">Game Room: #{index + 1}</h3>
-                <p>Id: {room.id}</p>
+                {/* <h3 className="text-xl mb-2">Game Room: #{index + 1}</h3> */}
+                <p className='text-xl mb-2'>Room Id: {room.id}</p>
                 <div className="grid grid-cols-2 gap-2">
                   <p>Players: {room.totalPlayers}</p>
                   <p>Game Started: {room.grid !== "" ? "Yes" : "No"}</p>
                   <p>Players Needed: {room.totalPlayers - room.players.length}</p>
                   <p>Game Ended: {room.winnerWallet ? "Yes" : "No"}</p>
-                  {room.winnerWallet && <p>Winner: {room.winnerWallet}</p>}
+                  {room.winnerWallet && <p>Winner: {formatAddress(room.winnerWallet)}</p>}
                 </div>
                 {room.grid === "" && room.players.length < room.totalPlayers && (
-                  <button
-                    onClick={() => joinGame(room)}
-                    disabled={!!currentRoom}
-                    className="bg-blue-500 text-white px-4 py-2 rounded mt-2 w-[120px]"
-                  >
+                  // <button
+                  //   onClick={() => joinGame(room)}
+                  //   disabled={!!currentRoom}
+                  //   className="bg-blue-500 text-white px-4 py-2 rounded mt-2 w-[120px]"
+                  // >
+                  //   Join
+                  // </button>
+                  <GameButton onClick={()=>joinGame(room)} disabled={!!currentRoom} 
+                    color="bg-green-500" color_hover="bg-green-550" className='border-green-700 px-12'>
                     Join
-                  </button>
+                  </GameButton>
                 )}
                 {room.grid !== "" && (
                   <button 
@@ -287,25 +335,39 @@ export function GameRooms() {
 
         <TabPanel>
           <div className="max-h-[420px] min-w-[450px] pr-[10px] overflow-y-auto">
+            <div className='flex m-2 items-center justify-between'>
+              <div>
+                Create Betting game room
+              </div>
+              <div onClick={()=>modalCreateRoom(true)}>
+                <GameButton onClick={()=>{}} color="bg-blue-500" color_hover="bg-blue-550" className='border-blue-700'>
+                  Create
+                </GameButton>
+              </div>
+            </div>
             {roomsBet.filter(room => room.isBettingRoom).map((room, index) => (
               <div key={room.id} className="border border-green-400 rounded-3xl p-4 mb-4 shadow-md">
-                <h3 className="text-xl mb-2">Game Room: #{index + 1}</h3>
-                <p>Id: {room.id}</p>
+                {/* <h3 className="text-xl mb-2">Game Room: #{index + 1}</h3> */}
+                <p className='text-xl mb-2'>Room Id: {room.id}</p>
                 <div className="grid grid-cols-2 gap-2">
                   <p>Players: {room.totalPlayers}</p>
                   <p>Game Started: {room.grid !== "" ? "Yes" : "No"}</p>
                   <p>Players Needed: {room.totalPlayers - room.players.length}</p>
                   <p>Game Ended: {room.winnerWallet ? "Yes" : "No"}</p>
-                  {room.winnerWallet && <p>Winner: {room.winnerWallet}</p>}
+                  {room.winnerWallet && <p>Winner: {formatAddress(room.winnerWallet)}</p>}
                 </div>
                 {room.grid === "" && room.players.length < room.totalPlayers && (
-                  <button
-                    onClick={() => joinGame(room)}
-                    disabled={!!currentRoom}
-                    className="bg-blue-500 text-white px-4 py-2 rounded mt-2 w-[120px]"
-                  >
+                  // <button
+                  //   onClick={() => joinGame(room)}
+                  //   disabled={!!currentRoom}
+                  //   className="bg-blue-500 text-white px-4 py-2 rounded mt-2 w-[120px]"
+                  // >
+                  //   Join
+                  // </button>
+                  <GameButton onClick={()=>joinGame(room)} disabled={!!currentRoom} 
+                    color="bg-green-500" color_hover="bg-green-550" className='border-green-700 px-12'>
                     Join
-                  </button>
+                  </GameButton>
                 )}
                 {room.grid !== "" && (
                   <button 
@@ -327,12 +389,12 @@ export function GameRooms() {
           <div className="max-h-[420px] min-w-[450px] pr-[10px] overflow-y-auto">
             {myGames.map((game, index) => (
               <div key={game.id} className="border border-green-400 rounded-3xl p-4 mb-4 shadow-md">
-                <h3 className="text-xl mb-2">Game Room: #{index + 1}</h3>
-                <p>Id: {game.id}</p>
-                <p>Status: {game.status}</p>
-                <p>Winner: {game.winnerWallet || "N/A"}</p>
+                {/* <h3 className="text-xl mb-2">Game Room: #{index + 1}</h3> */}
+                <p className='text-xl mb-2'>Room Id: {game.id}</p>
+                {/* <p>Status: {game.status}</p> */}
+                <p>Winner: {formatAddress(game.winnerWallet) || "N/A"}</p>
                 <p>Players: {game.players.length}</p>
-                <p>Game Started: {game.grid !== "" ? "Yes" : "No"}</p>
+                {/* <p>Game Started: {game.grid !== "" ? "Yes" : "No"}</p> */}
                 {game.winnerWallet === account?.address ? (
                   <p className="font-bold text-green-500">You Won!</p>
                 ) : (
@@ -356,6 +418,11 @@ export function GameRooms() {
           </div>
         </TabPanel>
       </Tabs>
+      <CreateRoomModal
+        isOpen={isModalOpen}
+        isbet={isBettingRoom}
+        onClose={() => setModalOpen(false)}
+      />
     </div>
   );
 }
