@@ -58,7 +58,7 @@ export function changePlayerSVG(fabricCanvas: fabric.Canvas, playerId: string, n
   
     if (playerObject instanceof fabric.Group) {
       // Carga el nuevo SVG
-      fabric.loadSVGFromURL(newSVGUrl, (objects, options) => {
+      fabric.loadSVGFromURL(newSVGUrl, (objects) => {
         // Crea un nuevo grupo con los objetos del SVG
         const newGroup = new fabric.Group(objects, {
           scaleX: playerObject.scaleX,

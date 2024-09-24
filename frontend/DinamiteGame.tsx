@@ -34,6 +34,7 @@ const DinamiteGame: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [gameState, setGameState] = useState<GameState>(initialGameState);
   const [playerId, setPlayerId] = useState<string | null>(null);
+  //@ts-ignore
   const [ably, setAbly] = useState<Ably.Realtime | null>(null);
   const [channel, setChannel] = useState<Ably.RealtimeChannel | null>(null);
 

@@ -9,7 +9,7 @@ import 'react-tabs/style/react-tabs.css';
 //import { CHAIN_NAME } from '@/config';
 // import { Text, useColorModeValue } from "@interchain-ui/react";
 import { db } from '../../config/firebase';
-import { addDoc, collection, updateDoc, doc, getDocs, query, where, Timestamp, orderBy } from 'firebase/firestore';
+import { addDoc, collection, updateDoc, doc, getDocs, query, where, orderBy } from 'firebase/firestore';
 //import { useChain } from '@cosmos-kit/react';
 import { notificateStore } from '@/store/notificateStore';
 import { LoadingScreen } from "../common/LoadingScreen";
@@ -293,7 +293,7 @@ export function GameRooms() {
                 </GameButton>
               </div>
             </div>
-            {roomsNoBet.filter(room => !room.isBettingRoom).map((room, index) => (
+            {roomsNoBet.filter(room => !room.isBettingRoom).map((room) => (
               <div key={room.id} className="border border-green-400 rounded-3xl p-4 mb-4 shadow-md">
                 {/* <h3 className="text-xl mb-2">Game Room: #{index + 1}</h3> */}
                 <p className='text-xl mb-2'>Room Id: {room.id}</p>
@@ -345,7 +345,7 @@ export function GameRooms() {
                 </GameButton>
               </div>
             </div>
-            {roomsBet.filter(room => room.isBettingRoom).map((room, index) => (
+            {roomsBet.filter(room => room.isBettingRoom).map((room) => (
               <div key={room.id} className="border border-green-400 rounded-3xl p-4 mb-4 shadow-md">
                 {/* <h3 className="text-xl mb-2">Game Room: #{index + 1}</h3> */}
                 <p className='text-xl mb-2'>Room Id: {room.id}</p>
@@ -387,7 +387,7 @@ export function GameRooms() {
 
         <TabPanel>
           <div className="max-h-[420px] min-w-[450px] pr-[10px] overflow-y-auto">
-            {myGames.map((game, index) => (
+            {myGames.map((game) => (
               <div key={game.id} className="border border-green-400 rounded-3xl p-4 mb-4 shadow-md">
                 {/* <h3 className="text-xl mb-2">Game Room: #{index + 1}</h3> */}
                 <p className='text-xl mb-2'>Room Id: {game.id}</p>

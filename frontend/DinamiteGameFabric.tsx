@@ -4,7 +4,7 @@ import { addDoc, collection, doc, getDocs, query, onSnapshot, updateDoc, where, 
 import { db } from '@/config/firebase';
 import { useWallet } from '@aptos-labs/wallet-adapter-react';
 import * as Ably from 'ably';
-import { fabricGif, FabricGifImage } from './utils/fabricGif';
+// import { fabricGif, FabricGifImage } from './utils/fabricGif';
 import { changePlayerSVG, setupArena, setupDecorativeElements } from './games-modules/DinamiteGame/components/ElementGame';
 
 
@@ -294,7 +294,7 @@ const DinamiteGame: React.FC = () => {
             y: ARENA_RADIUS * Math.sin(angle) + 200,
             angle: rotationAngleDegrees,
             color: COLORS[currentGame.players.length],
-            hasDynamite: currentGame.players.length === 0
+            hasDynamite: false//currentGame.players.length === 0
           };
           const updatedPlayers = [...currentGame.players, newPlayer];
           await updateDoc(gameRef, { 
@@ -324,10 +324,10 @@ const DinamiteGame: React.FC = () => {
 
 
   const createPlayerObject = (player: Player): Promise<fabric.Object> => {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       let personaje = player.hasDynamite? `/players/personaje-${player.color}-tnt.svg`:`/players/personaje-${player.color}.svg`
       
-      fabric.loadSVGFromURL(personaje, async (objects, options) => {
+      fabric.loadSVGFromURL(personaje, async (objects) => {
         const playerGroup = new fabric.Group(objects, {
           left: player.x,
           top: player.y,

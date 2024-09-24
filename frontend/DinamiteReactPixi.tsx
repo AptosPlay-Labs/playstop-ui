@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatedGIF } from '@pixi/gif';
 // import '@pixi/gif';
-import { BlurFilter, TextStyle, Assets, Container as contain,  } from 'pixi.js';
+import { BlurFilter, TextStyle, Container as contain,  } from 'pixi.js';
 import { Stage, Container, Sprite, Text} from '@pixi/react';
 import { useWallet } from '@aptos-labs/wallet-adapter-react';
-import { X } from 'lucide-react';
+// import { X } from 'lucide-react';
 
 
 const DinamiteReactPixi = () => {

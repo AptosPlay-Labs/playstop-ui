@@ -2,7 +2,7 @@ import { Network } from "@aptos-labs/ts-sdk";
 import { NetworkInfo, isAptosNetwork } from "@aptos-labs/wallet-adapter-react";
 import { PRIVATE_KEY } from "@/constants";
 import * as ed from '@noble/ed25519';
-import { hexToBytes, bytesToHex } from '@noble/hashes/utils';
+import { hexToBytes } from '@noble/hashes/utils';
 import { sha512 } from '@noble/hashes/sha512';
 import { Buffer } from 'buffer';
 

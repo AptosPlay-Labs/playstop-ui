@@ -9,6 +9,7 @@ const VirtualJoystick: React.FC<JoystickProps> = ({ size, onMove }) => {
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const joystickRef = useRef<HTMLDivElement>(null);
 
+  //@ts-ignore
   const handleMouseDown = (event: React.MouseEvent<HTMLDivElement>) => {
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);

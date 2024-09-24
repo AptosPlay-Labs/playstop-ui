@@ -9,15 +9,14 @@
 // import { TransferAPT } from "@/components/TransferAPT";
 // import { MessageBoard } from "@/components/MessageBoard";
 import {Layout} from "@/components/common"
-//import { ColorWar } from "./ColorWar";
 import { motion } from 'framer-motion';
 import { ColorWar } from './ColorWar';
-import { useState } from "react";
+// import { useState } from "react";
 import { notificateStore } from "./store/notificateStore";
-import DinamiteGame from "./DinamiteGame";
+// import DinamiteGame from "./DinamiteGame";
 import DinamiteGameFabric from "./DinamiteGameFabric";
-import DinamiteReactPixi from "./DinamiteReactPixi";
-import DinamiteGameV2 from "./DinamiteGameV2";
+// import DinamiteReactPixi from "./DinamiteReactPixi";
+// import DinamiteGameV2 from "./DinamiteGameV2";
 
 const games = [
   { name: 'COLOR WAR', id:"color-war", color: 'from-yellow-400 to-yellow-600', img:"./images/color-war.png"},
@@ -38,12 +37,8 @@ const GameCard = ({ name, color, img }) => (
     className="aspect-square"
   >
     <div className={`trapezoidal-card w-full h-70 bg-gradient-to-br ${color} flex flex-col items-center justify-center p-4`}>
-      {/* <svg viewBox="0 0 24 24" className="w-20 h-20 text-white mb-2">
-        {svg}
-      </svg> */}
       <img className="transform scale-125 -mt-6 mb-5" src={img} alt=""/>
       <div className="font-bold text-white text-center text-xl">{name}</div>
-
     </div>  
   </motion.div>
 );
@@ -52,7 +47,6 @@ function App() {
   //const { account } = useWallet();
   //const [selectedGame, setSelectedGame] = useState(null);
   const {selectedGame, setSelectedGame } = notificateStore();
-
 
   const handleCardClick = (gameId:any) => {
     setSelectedGame(gameId);
@@ -84,7 +78,6 @@ function App() {
               ))}
             </div>
             {/* <div className='space-invader'></div> */}
-
           </div>
 
         </div>
