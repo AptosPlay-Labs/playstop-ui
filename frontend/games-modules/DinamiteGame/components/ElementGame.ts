@@ -53,38 +53,47 @@ export const createRock = (x: number, y: number) => {
 
 
 export function changePlayerSVG(fabricCanvas: fabric.Canvas, playerId: string, newSVGUrl: string) {
-    // Encuentra el objeto del jugador
-    const playerObject = fabricCanvas.getObjects().find(obj => obj.data?.playerId === playerId);
-  
-    if (playerObject instanceof fabric.Group) {
-      // Carga el nuevo SVG
-      fabric.loadSVGFromURL(newSVGUrl, (objects) => {
-        // Crea un nuevo grupo con los objetos del SVG
-        const newGroup = new fabric.Group(objects, {
-          scaleX: playerObject.scaleX,
-          scaleY: playerObject.scaleY,
-          left: playerObject.left,
-          top: playerObject.top,
-          angle:playerObject.angle,
-          selectable: false,
-          data: { playerId: playerId }
-        });
-  
-        // Si el jugador tiene dinamita, la añadimos al nuevo grupo
-        // const dynamite = playerObject.getObjects().find(obj => obj.data?.isDynamite);
-        // if (dynamite) {
-        //   newGroup.addWithUpdate(dynamite);
-        // }
-  
-        // Reemplaza el grupo antiguo con el nuevo
-        const index = fabricCanvas.getObjects().indexOf(playerObject);
-        fabricCanvas.remove(playerObject);
-        fabricCanvas.insertAt(newGroup, index, false);
-  
-        fabricCanvas.renderAll();
-      });
+  // Encuentra el objeto del jugador
+  const playerObject = fabricCanvas.getObjects().find(obj => obj.data?.playerId === playerId);
+
+  if (playerObject instanceof fabric.Group) {
+    // Añade una bandera para evitar múltiples actualizaciones simultáneas
+    if (playerObject.data.isUpdating) {
+      console.log('Update in progress, skipping...');
+      return;
     }
+
+    playerObject.data.isUpdating = true;
+    // Carga el nuevo SVG
+    fabric.loadSVGFromURL(newSVGUrl, (objects, options) => {
+      // Crea un nuevo grupo con los objetos del SVG
+      const newGroup = new fabric.Group(objects, {
+        ...playerObject.toObject(),
+        data: { 
+          ...playerObject.data,
+          isUpdating: false,
+          hasDynamite:!playerObject.data.hasDynamite
+        }
+      });
+
+      // Si el jugador tiene dinamita, la añadimos al nuevo grupo
+      const dynamite = playerObject.getObjects().find(obj => obj.data?.isDynamite);
+      if (dynamite) {
+        newGroup.addWithUpdate(dynamite);
+      }
+
+      // Reemplaza el grupo antiguo con el nuevo
+      fabricCanvas.remove(playerObject);
+      fabricCanvas.add(newGroup);
+      //fabricCanvas.renderAll();
+
+      // Asegúrate de que el nuevo grupo esté en la misma posición en el stack
+      //newGroup.moveTo(playerObject.getObjects().indexOf(dynamite!));
+    });
+  } else {
+    console.log('Player object not found or is not a group');
   }
+}
 
 export const createDynamite = async() => {
     const dynamiteGroup = new fabric.Group([], {

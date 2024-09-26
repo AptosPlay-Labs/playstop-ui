@@ -14,7 +14,7 @@ import { ColorWar } from './ColorWar';
 // import { useState } from "react";
 import { notificateStore } from "./store/notificateStore";
 // import DinamiteGame from "./DinamiteGame";
-import DinamiteGameFabric from "./DinamiteGameFabric";
+import { DinamiteGameFabric } from "./DinamiteGameFabric";
 // import DinamiteReactPixi from "./DinamiteReactPixi";
 // import DinamiteGameV2 from "./DinamiteGameV2";
 
