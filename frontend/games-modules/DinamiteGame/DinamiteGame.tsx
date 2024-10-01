@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { fabric } from 'fabric';
 import { addDoc, collection, doc, getDocs, query, onSnapshot, updateDoc, where, getDoc } from 'firebase/firestore';
 import { db } from '@/config/firebase';
@@ -32,6 +32,9 @@ const COLORS = ['red', 'blue', 'green', 'yellow', 'purple', 'orange', 'pink', 'c
 const MAX_PLAYERS = 2;
 const ARENA_RADIUS = 180;
 const PLAYER_RADIUS = 16;
+
+// roomId G4wc5hMBwefzX3r6bJ0W
+// chanel game-1726685339198 game-${Date.now()}
 
  export function DinamiteGame() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -104,7 +107,7 @@ const PLAYER_RADIUS = 16;
 
   const handleKeyDown = useCallback(async (e: KeyboardEvent) => {
     if (!playerId || !canvas) return;
-    if(!gameState?.isStart) return
+    // if(!gameState?.isStart) return
     const player = gameState?.players.find((p:any) => p.id === playerId);
     if (!player) return;
     

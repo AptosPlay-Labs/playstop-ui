@@ -3,7 +3,7 @@ import { notificateStore } from "@/store/notificateStore";
 import { motion } from "framer-motion";
 
 
-export function ColorWar() {
+export function ReactiveChain() {
     const { currentRoom, isSpectator ,setSelectedGame} = notificateStore();
 
     return (
