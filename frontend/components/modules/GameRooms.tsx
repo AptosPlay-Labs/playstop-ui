@@ -208,48 +208,51 @@ export function GameRooms() {
     }
 
     console.log(room.roomIdContract)
-    let contractSucces = await  joinRoomContract(room.roomIdContract)
-
-    if(contractSucces){
-      if (room.players.length < room.totalPlayers && room.grid === "") {
-        const gameDocRef = doc(db, 'games', room.id);
-        const newPlayer = {
-          color: room.players.length === 0 ? 'red' : 'blue',
-          moves: 0,
-          play: false,
-          wallet: account?.address,
-          winner: false,
-        };
-        let newCurrentplayer = (existingGame && existingGame.currentPlayerWallet && (existingGame.currentPlayerWallet !== "")) ? existingGame.currentPlayerWallet : account?.address;
-
-      
-        //esto uede generar error en caso se unan 2 usuarios al mismo tiempo.
-        await updateDoc(gameDocRef, { players: [...room.players, newPlayer],
-          playersWallets: [...room.playersWallets, account?.address],
-          currentPlayerWallet: newCurrentplayer });
-
-        if (playerData) {
-          const playerDocRef = doc(db, 'players', playerSnapshot.docs[0].id);
-          await updateDoc(playerDocRef, { actualRoom: room.id });
-        }
-
-        //aqui enivar al contrato transaccion
-
-        setCurrentRoom(room.id);
-        setNotifyCurrentRoom(room.id);
-        setIsSpectator(false);
-      } else {
+    if(room.isBettingRoom){
+      let contractSucces = await  joinRoomContract(room.roomIdContract)
+      if(!contractSucces){
         toast({
           title: "Error",
-          description: `Unable to join this room.`,
+          description: `error Join room in contract`,
         });
+        return
       }
-    }else{
+    }
+  
+    if (room.players.length < room.totalPlayers && room.grid === "") {
+      const gameDocRef = doc(db, 'games', room.id);
+      const newPlayer = {
+        color: room.players.length === 0 ? 'red' : 'blue',
+        moves: 0,
+        play: false,
+        wallet: account?.address,
+        winner: false,
+      };
+      let newCurrentplayer = (existingGame && existingGame.currentPlayerWallet && (existingGame.currentPlayerWallet !== "")) ? existingGame.currentPlayerWallet : account?.address;
+
+    
+      //esto uede generar error en caso se unan 2 usuarios al mismo tiempo.
+      await updateDoc(gameDocRef, { players: [...room.players, newPlayer],
+        playersWallets: [...room.playersWallets, account?.address],
+        currentPlayerWallet: newCurrentplayer });
+
+      if (playerData) {
+        const playerDocRef = doc(db, 'players', playerSnapshot.docs[0].id);
+        await updateDoc(playerDocRef, { actualRoom: room.id });
+      }
+
+      //aqui enivar al contrato transaccion
+
+      setCurrentRoom(room.id);
+      setNotifyCurrentRoom(room.id);
+      setIsSpectator(false);
+    } else {
       toast({
         title: "Error",
-        description: `error Join room in contract`,
+        description: `Unable to join this room.`,
       });
     }
+    
     setLoading(false);
   }
 
