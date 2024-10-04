@@ -46,6 +46,7 @@ const WonOrLostModal: React.FC<Withdraw> = ({ isOpen, amount, isBet, isWon, stat
         let roomId = await endRoom()
         if(roomId){
             onClose()
+            endGameNoBet(roomId);
             setNotifyCurrentRoom(null);
             setIsSpectator(false);
             setSelectedGame(null)
@@ -58,6 +59,7 @@ const WonOrLostModal: React.FC<Withdraw> = ({ isOpen, amount, isBet, isWon, stat
         let roomId = await endRoom()
         if(roomId){
             onClose()
+            
             setNotifyCurrentRoom(null);
             setIsSpectator(false);
         }   
@@ -81,6 +83,11 @@ const WonOrLostModal: React.FC<Withdraw> = ({ isOpen, amount, isBet, isWon, stat
     async function endGame(id:string){
         const gameDocRef = doc(db, 'games', id);
         await updateDoc(gameDocRef, { status: "completed" });
+    }
+
+    async function endGameNoBet(id:string){
+        const gameDocRef = doc(db, 'games', id);
+        await updateDoc(gameDocRef, {status: "completed"});
     }
 
     async function onClaimPrize(){
@@ -157,16 +164,28 @@ const WonOrLostModal: React.FC<Withdraw> = ({ isOpen, amount, isBet, isWon, stat
                     </div>
 
                     {isWon ? (
-                        <>
+                         isBet ? (
+                            // Ganador en sala de apuestas
                             <div className="space-y-4">
                                 <GameButton onClick={onClaimPrize} color="bg-yellow-500" color_hover="bg-yellow-550" className='border-yellow-700 w-full'>
                                     <div className='flex items-center justify-center space-x-2'>
                                         <Award fill="currentColor" size={20} />
-                                        <span>Claim</span>
+                                        <span>Claim Prize</span>
                                     </div>
                                 </GameButton>
                             </div>
-                        </>
+                        ) : (
+                            // Ganador en sala sin apuestas
+                            <div className="space-y-4">
+                                <p className="text-lg font-semibold text-white text-center mb-4">¡Felicidades por tu victoria!</p>
+                                <GameButton onClick={onPlayHome} color="bg-blue-500" color_hover="bg-blue-550" className='border-blue-700 w-full'>
+                                    <div className='flex items-center justify-center space-x-2'>
+                                        <Home size={20} />
+                                        <span>Volver al Inicio</span>
+                                    </div>
+                                </GameButton>
+                            </div>
+                        )
                     ):(
                         <>
                             <div className="space-y-4 mb-4">
