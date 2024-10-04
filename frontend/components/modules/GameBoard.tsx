@@ -42,6 +42,8 @@ export function GameBoard() {
         const docSnap = await getDoc(gameDoc);
         if (docSnap.exists()) {
           const data = docSnap.data();
+
+          
           //const winner = data.players.find((vl:any) => vl.winner===true);
           initializeGame(8, 8, currentRoom, data.players);
           // if (data.status === 'waiting' && !winner) {
@@ -57,6 +59,7 @@ export function GameBoard() {
           // else {
           //   console.log("El juego ha finalizado.");
           // }
+
         }
       };
       fetchGame();
@@ -288,7 +291,7 @@ export function GameBoard() {
             onClick={startGame} 
             disabled={gameStarted}
           >
-            Iniciar Juego
+            Listo
           </button>
           {gameStarted && (
             <div>

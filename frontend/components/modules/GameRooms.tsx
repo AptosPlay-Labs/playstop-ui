@@ -229,9 +229,9 @@ export function GameRooms() {
         winner: false,
       };
       let newCurrentplayer = (existingGame && existingGame.currentPlayerWallet && (existingGame.currentPlayerWallet !== "")) ? existingGame.currentPlayerWallet : account?.address;
-
-    
-      //esto uede generar error en caso se unan 2 usuarios al mismo tiempo.
+      
+      
+      //esto puede generar error en caso se unan 2 usuarios al mismo tiempo.
       await updateDoc(gameDocRef, { players: [...room.players, newPlayer],
         playersWallets: [...room.playersWallets, account?.address],
         currentPlayerWallet: newCurrentplayer });
@@ -241,7 +241,7 @@ export function GameRooms() {
         await updateDoc(playerDocRef, { actualRoom: room.id });
       }
 
-      //aqui enivar al contrato transaccion
+      //aqui enviar al contrato transaccion
 
       setCurrentRoom(room.id);
       setNotifyCurrentRoom(room.id);
@@ -296,7 +296,8 @@ export function GameRooms() {
                 </GameButton>
               </div>
             </div>
-            {roomsNoBet.filter(room => !room.isBettingRoom).map((room) => (
+            {roomsNoBet.filter(room => !room.isBettingRoom && (room.totalPlayers - room.players.length !== 2)).map((room) => (
+              
               <div key={room.id} className="border border-green-400 rounded-3xl p-4 mb-4 shadow-md">
                 {/* <h3 className="text-xl mb-2">Game Room: #{index + 1}</h3> */}
                 <p className='text-xl mb-2'>Room Id: {room.id}</p>

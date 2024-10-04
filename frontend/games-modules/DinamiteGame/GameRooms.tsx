@@ -299,6 +299,7 @@ export function GameRooms() {
             </div>
             {roomsNoBet.filter(room => !room.isBettingRoom).map((room) => (
               <div key={room.id} className="border border-green-400 rounded-3xl p-4 mb-4 shadow-md">
+
                 {/* <h3 className="text-xl mb-2">Game Room: #{index + 1}</h3> */}
                 <p className='text-xl mb-2'>Room Id: {room.id}</p>
                 <div className="grid grid-cols-2 gap-2">
