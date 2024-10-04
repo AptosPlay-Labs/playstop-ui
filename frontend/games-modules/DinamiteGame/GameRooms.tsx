@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useWallet } from "@aptos-labs/wallet-adapter-react";
-import { BettingGames, NonBettingGames, MyGames, GameRoom } from '../../core/FirestoreGameRoom';
+import { BettingGames, NonBettingGames, MyGames, GameRoom } from './components/FirestoreGameRoom';
 import { FirestorePlayers, Player } from '../../core/FirestorePlayers';
 //import { Box, Tabs, TabList, TabPanel, TabPanels, VStack, Tab, Button, Grid } from '@chakra-ui/react';
 import { Tab, Tabs, TabList, TabPanel } from 'react-tabs';
@@ -15,7 +15,7 @@ import { notificateStore } from '@/store/notificateStore';
 import { LoadingScreen } from "../../components/common/LoadingScreen";
 import { aptosClient } from "@/utils/aptosClient";
 import { ChainReactionGame } from '@/entry-functions/ChainReactionGame';
-import CreateRoomModal from '../../components/common/CreateRoomModal';
+import CreateRoomModal from './components/CreateRoomModal';
 import { GameButton } from '../../components/ui/GameButton';
 import { toast } from '../../components/ui/use-toast';
 
@@ -86,7 +86,7 @@ export function GameRooms() {
           }
         }
 
-        const gameQuery = query(collection(db, 'games'),
+        const gameQuery = query(collection(db, 'games_ably'),
           where('playersWallets', 'array-contains', account?.address),
           where('status', 'in', ['live', 'waiting']),
           orderBy('createRoomTime', 'desc'));
@@ -186,7 +186,7 @@ export function GameRooms() {
       playerData = doc.data();
     });
 
-    const gameQuery = query(collection(db, 'games'),
+    const gameQuery = query(collection(db, 'games_ably'),
       where('playersWallets', 'array-contains', account?.address),
       where('status', '==', 'waiting'),
       orderBy('createRoomTime', 'desc'));
@@ -204,50 +204,54 @@ export function GameRooms() {
         title: "Error",
         description: 'You are already in another room.',
       });
+      setLoading(false);
       return;
     }
 
     console.log(room.roomIdContract)
-    let contractSucces = await  joinRoomContract(room.roomIdContract)
-
-    if(contractSucces){
-      if (room.players.length < room.totalPlayers && room.grid === "") {
-        const gameDocRef = doc(db, 'games', room.id);
-        const newPlayer = {
-          color: room.players.length === 0 ? 'red' : 'blue',
-          moves: 0,
-          play: false,
-          wallet: account?.address,
-          winner: false,
-        };
-        let newCurrentplayer = (existingGame && existingGame.currentPlayerWallet && (existingGame.currentPlayerWallet !== "")) ? existingGame.currentPlayerWallet : account?.address;
-
-      
-        //esto uede generar error en caso se unan 2 usuarios al mismo tiempo.
-        await updateDoc(gameDocRef, { players: [...room.players, newPlayer],
-          playersWallets: [...room.playersWallets, account?.address],
-          currentPlayerWallet: newCurrentplayer });
-
-        if (playerData) {
-          const playerDocRef = doc(db, 'players', playerSnapshot.docs[0].id);
-          await updateDoc(playerDocRef, { actualRoom: room.id });
-        }
-
-        //aqui enivar al contrato transaccion
-
-        setCurrentRoom(room.id);
-        setNotifyCurrentRoom(room.id);
-        setIsSpectator(false);
-      } else {
+    if(room.isBettingRoom){
+      let contractSucces = await  joinRoomContract(room.roomIdContract)
+      if(!contractSucces){
         toast({
           title: "Error",
-          description: `Unable to join this room.`,
+          description: `error Join room in contract`,
         });
+        setLoading(false);
+        return
       }
-    }else{
+    }
+
+    if (room.players.length < room.totalPlayers && !room.isStart) {
+      const gameDocRef = doc(db, 'games_ably', room.id);
+      // const newPlayer = {
+      //   color: room.players.length === 0 ? 'red' : 'blue',
+      //   moves: 0,
+      //   play: false,
+      //   wallet: account?.address,
+      //   winner: false,
+      // };
+      // let newCurrentplayer = (existingGame && existingGame.currentPlayerWallet && (existingGame.currentPlayerWallet !== "")) ? existingGame.currentPlayerWallet : account?.address;
+
+    
+      //esto uede generar error en caso se unan 2 usuarios al mismo tiempo.
+      await updateDoc(gameDocRef, {
+        playersWallets: [...room.playersWallets, account?.address]
+      });
+
+      if (playerData) {
+        const playerDocRef = doc(db, 'players', playerSnapshot.docs[0].id);
+        await updateDoc(playerDocRef, { actualRoom: room.id });
+      }
+
+      //aqui enivar al contrato transaccion
+
+      setCurrentRoom(room.id);
+      setNotifyCurrentRoom(room.id);
+      setIsSpectator(false);
+    } else {
       toast({
         title: "Error",
-        description: `error Join room in contract`,
+        description: `Unable to join this room.`,
       });
     }
     setLoading(false);
@@ -300,12 +304,12 @@ export function GameRooms() {
                 <p className='text-xl mb-2'>Room Id: {room.id}</p>
                 <div className="grid grid-cols-2 gap-2">
                   <p>Players: {room.totalPlayers}</p>
-                  <p>Game Started: {room.grid !== "" ? "Yes" : "No"}</p>
+                  <p>Game Started: {room.isStart ? "Yes" : "No"}</p>
                   <p>Players Needed: {room.totalPlayers - room.players.length}</p>
                   <p>Game Ended: {room.winnerWallet ? "Yes" : "No"}</p>
                   {room.winnerWallet && <p>Winner: {formatAddress(room.winnerWallet)}</p>}
                 </div>
-                {room.grid === "" && room.players.length < room.totalPlayers && (
+                {!room.isStart && room.players.length < room.totalPlayers && (
                   // <button
                   //   onClick={() => joinGame(room)}
                   //   disabled={!!currentRoom}
@@ -318,7 +322,7 @@ export function GameRooms() {
                     Join
                   </GameButton>
                 )}
-                {room.grid !== "" && (
+                {room.isStart && (
                   <button 
                     onClick={() => viewGamePlay(room.id)}
                     className="bg-green-500 text-white px-4 py-2 rounded mt-2"
@@ -326,7 +330,7 @@ export function GameRooms() {
                     View Game
                   </button>
                 )}
-                {room.grid === "" && room.players.length === room.totalPlayers && (
+                {!room.isStart && room.players.length === room.totalPlayers && (
                   <p>Pending Start...</p>
                 )}
               </div>
@@ -352,12 +356,12 @@ export function GameRooms() {
                 <p className='text-xl mb-2'>Room Id: {room.id}</p>
                 <div className="grid grid-cols-2 gap-2">
                   <p>Players: {room.totalPlayers}</p>
-                  <p>Game Started: {room.grid !== "" ? "Yes" : "No"}</p>
+                  <p>Game Started: {room.isStart ? "Yes" : "No"}</p>
                   <p>Players Needed: {room.totalPlayers - room.players.length}</p>
                   <p>Game Ended: {room.winnerWallet ? "Yes" : "No"}</p>
                   {room.winnerWallet && <p>Winner: {formatAddress(room.winnerWallet)}</p>}
                 </div>
-                {room.grid === "" && room.players.length < room.totalPlayers && (
+                {!room.isStart && room.players.length < room.totalPlayers && (
                   // <button
                   //   onClick={() => joinGame(room)}
                   //   disabled={!!currentRoom}
@@ -370,7 +374,7 @@ export function GameRooms() {
                     Join
                   </GameButton>
                 )}
-                {room.grid !== "" && (
+                {room.isStart && (
                   <button 
                     onClick={() => viewGamePlay(room.id)}
                     className="bg-green-500 text-white px-4 py-2 rounded mt-2"
@@ -378,7 +382,7 @@ export function GameRooms() {
                     View Game
                   </button>
                 )}
-                {room.grid === "" && room.players.length === room.totalPlayers && (
+                {!room.isStart && room.players.length === room.totalPlayers && (
                   <p>Pending Start...</p>
                 )}
               </div>

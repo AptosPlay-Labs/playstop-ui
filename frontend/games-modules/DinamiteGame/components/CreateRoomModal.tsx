@@ -4,9 +4,9 @@ import { addDoc, collection, doc, getDocs, orderBy, query, Timestamp, updateDoc,
 import React, { useEffect, useState } from 'react';
 import { aptosClient } from "@/utils/aptosClient";
 import { ChainReactionGame } from '@/entry-functions/ChainReactionGame';
-import { GameButton } from '../ui/GameButton';
-import { toast } from '../ui/use-toast';
-import { LoadingScreen } from './LoadingScreen';
+import { GameButton } from '../../../components/ui/GameButton.tsx';
+import { toast } from '../../../components/ui/use-toast';
+import { LoadingScreen } from '../../../components/common/LoadingScreen';
 import { notificateStore } from '@/store/notificateStore';
 
 //import { createNewGameRoom, createNewGameRoomBet } from './gameFunctions'; // Asegúrate de importar las funciones correctas
@@ -215,32 +215,29 @@ const CreateRoomModal: React.FC<CreateRoom> = ({ isOpen,isbet, onClose }) => {
 
     async function createNewGameRoom() {
         // let amount = (betAmount * 100000000).toFixed(8).replace(/\.?0+$/, '');
+
         let isPlaynow = await validateIsPlayNow()
         if(isPlaynow=='') return
         
         const initialData = {
-          currentPlayerWallet: account?.address,
           roomIdContract:null,
-          grid: "",
-          players: [
-            {
-              color: "red",
-              moves: 0,
-              play: false,
-              wallet: account?.address,
-              winner: false
-            }
-          ],
+          channel:`game-${Date.now()}`,
+          isStart: false,
+          players: [],
+          dynamiteHolder:"",
+          explosionTime:0,
           playersWallets:[account?.address],
           betAmount: "0.0",
           totalPlayers: totalPlayers,
           isBettingRoom: isBettingRoom,
           createRoomTime: Timestamp.now(),
-          status:"waiting"
+          status:"waiting",
+          winner: "",
+          winnerWallet: ""
         };
     
         try {
-            const gameRoomsCollection = collection(db, 'games');
+            const gameRoomsCollection = collection(db, 'games_ably');
             const docRef = await addDoc(gameRoomsCollection, initialData);
             const newDocId = docRef.id;
             
@@ -276,29 +273,25 @@ const CreateRoomModal: React.FC<CreateRoom> = ({ isOpen,isbet, onClose }) => {
         if(txContract.success && txContract.room_id){
             let roomIdContract = parseInt(txContract.room_id)
 
-            const initialData = {
-                currentPlayerWallet: account?.address,
-                roomIdContract: roomIdContract,
-                grid: "",
-                players: [
-                  {
-                    color: "red",
-                    moves: 0,
-                    play: false,
-                    wallet: account?.address,
-                    winner: false
-                  }
-                ],
+              const initialData = {
+                roomIdContract:roomIdContract,
+                channel:`game-${Date.now()}`,
+                isStart: false,
+                players: [],
+                dynamiteHolder:"",
+                explosionTime:0,
                 playersWallets:[account?.address],
-                betAmount:betAmount,
+                betAmount: betAmount,
                 totalPlayers: totalPlayers,
                 isBettingRoom: isBettingRoom,
                 createRoomTime: Timestamp.now(),
-                status:"waiting"
+                status:"waiting",
+                winner: "",
+                winnerWallet: ""
               };
           
               try {
-                const gameRoomsCollection = collection(db, 'games');
+                const gameRoomsCollection = collection(db, 'games_ably');
                 const docRef = await addDoc(gameRoomsCollection, initialData);
                 const newDocId = docRef.id;
 
@@ -330,7 +323,7 @@ const CreateRoomModal: React.FC<CreateRoom> = ({ isOpen,isbet, onClose }) => {
         const playerQuery = query(collection(db, 'players'), where('wallet', '==', account?.address));
         const playerSnapshot = await getDocs(playerQuery);
     
-        const gameQuery = query(collection(db, 'games'),
+        const gameQuery = query(collection(db, 'games_ably'),
           where('playersWallets', 'array-contains', account?.address),
           where('status', '==', 'waiting'),
           orderBy('createRoomTime', 'desc'));
