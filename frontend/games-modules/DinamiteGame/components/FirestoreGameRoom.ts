@@ -33,7 +33,7 @@ class BettingGames {
     const q = query(
       this.roomsCollection,
       where('isBettingRoom', '==', true),
-      where('status', 'in', ['live', 'waiting']),
+      where('status', 'in', ['waiting']),
       orderBy('createRoomTime', 'desc'),
       limit(20)
     );
@@ -78,7 +78,7 @@ class NonBettingGames {
     const q = query(
       this.roomsCollection,
       where('isBettingRoom', '==', false),
-      where('status', 'in', ['live', 'waiting']),
+      where('status', 'in', ['waiting']),
       orderBy('createRoomTime', 'desc'),
       limit(20)
     );
