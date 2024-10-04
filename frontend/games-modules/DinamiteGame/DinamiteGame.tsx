@@ -51,7 +51,7 @@ const PLAYER_RADIUS = 16;
   const [showCounter, setShowCounter] = useState(false);
   const [showWinnerAlert, setShowWinnerAlert] = useState(false);
   const [winnerInfo, setWinnerInfo] = useState<{ id: string; color: string, wallet:string } | null>(null);
-  const { currentRoom, isSpectator } = notificateStore();
+  const { currentRoom } = notificateStore();
   //const { selectedGame, setNotifyCurrentRoom, setIsSpectator } = notificateStore();
 
   const { account } = useWallet();
