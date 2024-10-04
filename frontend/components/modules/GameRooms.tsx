@@ -9,7 +9,7 @@ import 'react-tabs/style/react-tabs.css';
 //import { CHAIN_NAME } from '@/config';
 // import { Text, useColorModeValue } from "@interchain-ui/react";
 import { db } from '../../config/firebase';
-import { addDoc, collection, updateDoc, doc, getDocs, query, where, orderBy } from 'firebase/firestore';
+import { addDoc, collection, updateDoc, doc, getDocs, query, where, orderBy, Timestamp } from 'firebase/firestore';
 //import { useChain } from '@cosmos-kit/react';
 import { notificateStore } from '@/store/notificateStore';
 import { LoadingScreen } from "../common/LoadingScreen";
@@ -41,12 +41,12 @@ export function GameRooms() {
     setLoading(true);
     const nonBettingGames = new NonBettingGames();
     nonBettingGames.onSnapshot((updatedRooms) => {
-        setRoomsNoBet(updatedRooms);
+      setRoomsNoBet(updatedRooms);
     });
 
     const bettingGames = new BettingGames();
     bettingGames.onSnapshot((updatedRooms) => {
-        setRoomsBet(updatedRooms);
+      setRoomsBet(updatedRooms);
     });
 
     const firestorePlayers = new FirestorePlayers();
@@ -55,12 +55,12 @@ export function GameRooms() {
     });
 
     if (account?.address) {
-        const firestoreMyGames = new MyGames(account?.address); // Initialize MyGames
-        firestoreMyGames.onSnapshot((games) => {
+      const firestoreMyGames = new MyGames(account?.address); // Initialize MyGames
+      firestoreMyGames.onSnapshot((games) => {
         setMyGames(games);
-        });
+      });
     }
-    
+
     async function checkCurrentRoom() {
       setCurrentRoom(null);
       if (account?.address) {
@@ -92,8 +92,8 @@ export function GameRooms() {
           orderBy('createRoomTime', 'desc'));
 
         const gameSnapshot = await getDocs(gameQuery);
-        
-        
+
+
         if (!gameSnapshot.empty) {
           gameSnapshot.forEach((doc_game) => {
             const gameData = doc_game.data();
@@ -142,30 +142,30 @@ export function GameRooms() {
     checkCurrentRoom();
   }, [account?.address, selectedGame]);
 
-  async function joinRoomContract(roomId:any){
-      try {
-          const committedTransaction = await signAndSubmitTransaction(
-              ChainReactionGame.joinRoom(roomId)
-          );
-          const executedTransaction = await aptosClient().waitForTransaction({
-            transactionHash: committedTransaction.hash,
-          });
+  async function joinRoomContract(roomId: any) {
+    try {
+      const committedTransaction = await signAndSubmitTransaction(
+        ChainReactionGame.joinRoom(roomId)
+      );
+      const executedTransaction = await aptosClient().waitForTransaction({
+        transactionHash: committedTransaction.hash,
+      });
 
-          console.log(executedTransaction)
+      console.log(executedTransaction)
 
-          toast({
-            title: "Success",
-            description: `Succeeded, hash: ${executedTransaction.hash}`,
-          });
-          return executedTransaction.success
-        } catch (error) {
-          console.error(error);
-          toast({
-              title: "Error",
-              description: `Transaction contract error`,
-            });
-          return false
-        }
+      toast({
+        title: "Success",
+        description: `Succeeded, hash: ${executedTransaction.hash}`,
+      });
+      return executedTransaction.success
+    } catch (error) {
+      console.error(error);
+      toast({
+        title: "Error",
+        description: `Transaction contract error`,
+      });
+      return false
+    }
   }
 
   async function joinGame(room: GameRoom) {
@@ -178,7 +178,7 @@ export function GameRooms() {
       setLoading(false);
       return;
     }
-    
+
     const playerQuery = query(collection(db, 'players'), where('wallet', '==', account?.address));
     const playerSnapshot = await getDocs(playerQuery);
     let playerData: any = null;
@@ -199,7 +199,7 @@ export function GameRooms() {
     });
 
     if ((playerData && playerData.actualRoom && playerData.actualRoom) ||
-      (existingGame && existingGame.id)) { 
+      (existingGame && existingGame.id)) {
       toast({
         title: "Error",
         description: 'You are already in another room.',
@@ -208,9 +208,9 @@ export function GameRooms() {
     }
 
     console.log(room.roomIdContract)
-    if(room.isBettingRoom){
-      let contractSucces = await  joinRoomContract(room.roomIdContract)
-      if(!contractSucces){
+    if (room.isBettingRoom) {
+      let contractSucces = await joinRoomContract(room.roomIdContract)
+      if (!contractSucces) {
         toast({
           title: "Error",
           description: `error Join room in contract`,
@@ -218,7 +218,7 @@ export function GameRooms() {
         return
       }
     }
-  
+
     if (room.players.length < room.totalPlayers && room.grid === "") {
       const gameDocRef = doc(db, 'games', room.id);
       const newPlayer = {
@@ -228,19 +228,36 @@ export function GameRooms() {
         wallet: account?.address,
         winner: false,
       };
-      let newCurrentplayer = (existingGame && existingGame.currentPlayerWallet && (existingGame.currentPlayerWallet !== "")) ? existingGame.currentPlayerWallet : account?.address;
-      
-      
+      let updatedPlayers = [...room.players, newPlayer];
+      let newCurrentplayer = room.players.length === 0 ? account?.address : room.players[0].wallet;
+
+      //let newCurrentplayer = (existingGame && existingGame.currentPlayerWallet && (existingGame.currentPlayerWallet !== "")) ? existingGame.currentPlayerWallet : account?.address;
+
+
       //esto puede generar error en caso se unan 2 usuarios al mismo tiempo.
-      await updateDoc(gameDocRef, { players: [...room.players, newPlayer],
+      /* await updateDoc(gameDocRef, { players: [...room.players, newPlayer],
         playersWallets: [...room.playersWallets, account?.address],
         currentPlayerWallet: newCurrentplayer });
+      */
+
+      await updateDoc(gameDocRef, {
+        players: updatedPlayers,
+        playersWallets: [...room.playersWallets, account?.address],
+        currentPlayerWallet: newCurrentplayer
+      });
 
       if (playerData) {
         const playerDocRef = doc(db, 'players', playerSnapshot.docs[0].id);
         await updateDoc(playerDocRef, { actualRoom: room.id });
       }
 
+      // Si es el segundo jugador, iniciar el juego
+      if (updatedPlayers.length === room.totalPlayers) {
+        await updateDoc(gameDocRef, {
+          status: 'live',
+          startTime: Timestamp.now(),
+        });
+      }
       //aqui enviar al contrato transaccion
 
       setCurrentRoom(room.id);
@@ -252,7 +269,7 @@ export function GameRooms() {
         description: `Unable to join this room.`,
       });
     }
-    
+
     setLoading(false);
   }
 
@@ -263,7 +280,7 @@ export function GameRooms() {
     setLoading(false);
   }
 
-  function modalCreateRoom(isbet:boolean){
+  function modalCreateRoom(isbet: boolean) {
     setIsBettingRoom(isbet)
     setModalOpen(true)
   }
@@ -290,14 +307,14 @@ export function GameRooms() {
               <div>
                 Create new game room
               </div>
-              <div onClick={()=>modalCreateRoom(false)}>
-                <GameButton onClick={()=>{}} color="bg-blue-500" color_hover="bg-blue-550" className='border-blue-700'>
+              <div onClick={() => modalCreateRoom(false)}>
+                <GameButton onClick={() => { }} color="bg-blue-500" color_hover="bg-blue-550" className='border-blue-700'>
                   Create
                 </GameButton>
               </div>
             </div>
             {roomsNoBet.filter(room => !room.isBettingRoom && (room.totalPlayers - room.players.length !== 2)).map((room) => (
-              
+
               <div key={room.id} className="border border-green-400 rounded-3xl p-4 mb-4 shadow-md">
                 {/* <h3 className="text-xl mb-2">Game Room: #{index + 1}</h3> */}
                 <p className='text-xl mb-2'>Room Id: {room.id}</p>
@@ -316,13 +333,13 @@ export function GameRooms() {
                   // >
                   //   Join
                   // </button>
-                  <GameButton onClick={()=>joinGame(room)} disabled={!!currentRoom} 
+                  <GameButton onClick={() => joinGame(room)} disabled={!!currentRoom}
                     color="bg-green-500" color_hover="bg-green-550" className='border-green-700 px-12'>
                     Join
                   </GameButton>
                 )}
                 {room.grid !== "" && (
-                  <button 
+                  <button
                     onClick={() => viewGamePlay(room.id)}
                     className="bg-green-500 text-white px-4 py-2 rounded mt-2"
                   >
@@ -343,8 +360,8 @@ export function GameRooms() {
               <div>
                 Create Betting game room
               </div>
-              <div onClick={()=>modalCreateRoom(true)}>
-                <GameButton onClick={()=>{}} color="bg-blue-500" color_hover="bg-blue-550" className='border-blue-700'>
+              <div onClick={() => modalCreateRoom(true)}>
+                <GameButton onClick={() => { }} color="bg-blue-500" color_hover="bg-blue-550" className='border-blue-700'>
                   Create
                 </GameButton>
               </div>
@@ -368,13 +385,13 @@ export function GameRooms() {
                   // >
                   //   Join
                   // </button>
-                  <GameButton onClick={()=>joinGame(room)} disabled={!!currentRoom} 
+                  <GameButton onClick={() => joinGame(room)} disabled={!!currentRoom}
                     color="bg-green-500" color_hover="bg-green-550" className='border-green-700 px-12'>
                     Join
                   </GameButton>
                 )}
                 {room.grid !== "" && (
-                  <button 
+                  <button
                     onClick={() => viewGamePlay(room.id)}
                     className="bg-green-500 text-white px-4 py-2 rounded mt-2"
                   >

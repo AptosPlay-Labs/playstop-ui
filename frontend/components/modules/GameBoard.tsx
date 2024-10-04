@@ -194,48 +194,60 @@ export function GameBoard() {
   };
 
   const exitGame = async () => {
-    setLoading(true)
-    if (currentRoom && game) {
-        const playerQuery = query(collection(db, 'players'), where('wallet', '==', account?.address));
-        const playerSnapshot = await getDocs(playerQuery);
-        //let playerData: any = null;
-        // playerSnapshot.forEach((doc) => {
-        //     playerData = doc.data();
-        // });
-        const playerDocRef = doc(db, 'players', playerSnapshot.docs[0].id);
-        await updateDoc(playerDocRef, { actualRoom: "" });
+    setLoading(true);
+  if (currentRoom && game) {
+    try {
+      const playerQuery = query(collection(db, 'players'), where('wallet', '==', account?.address));
+      const playerSnapshot = await getDocs(playerQuery);
+      const playerDocRef = doc(db, 'players', playerSnapshot.docs[0].id);
+      await updateDoc(playerDocRef, { actualRoom: "" });
 
-        const winner = game.players.find((vl:any) => vl.winner===true);
-        if(!winner && game.status === "live"){
-            game.players.map(vl=>{
-                if(account?.address !== vl.wallet){
-                    vl.winner = true    
-                }
-                return vl
-            })
-            await updatPLayer(game, true)
-            await updateDoc(game.gameDoc, { players: game.players, status: "completed" });
-            
+      const isCreator = game.players[0].wallet === account?.address;
+      const isOnlyPlayer = game.players.length === 1;
+
+      if (isCreator && isOnlyPlayer && game.status === "waiting") {
+        // El creador sale cuando aún no se han unido otros jugadores
+        await updateDoc(game.gameDoc, { 
+          status: "leave",
+          players: [],
+          playersWallets: []
+        });
+      } else if (game.status === "waiting") {
+        // Otros jugadores salen durante el estado de espera
+        let playerList = game.players.filter(vl => vl.wallet !== account?.address);
+        let playerAddress = playerList.map(player => player.wallet);
+        let currentPlayerWallet = playerAddress.length > 0 ? playerAddress[0] : "";
+        await updateDoc(game.gameDoc, {
+          currentPlayerWallet: currentPlayerWallet,
+          players: playerList,
+          playersWallets: playerAddress
+        });
+      } else if (game.status === "live") {
+        // Un jugador sale durante el juego en vivo
+        const winner = game.players.find((vl) => vl.winner === true);
+        if (!winner) {
+          game.players = game.players.map(vl => {
+            if (account?.address !== vl.wallet) {
+              vl.winner = true;
+            }
+            return vl;
+          });
+          await updatPLayer(game, true);
+          await updateDoc(game.gameDoc, { players: game.players, status: "completed" });
         }
-        
-        if ( game.status === "waiting") {
-            //revisar en caso sea mas de 2 jugadores, aqui solo se esta mateneindo los jugadores que se queden en el juego
-            let playerList = game.players.filter(vl => vl.wallet !== account?.address);
-            let playerAddress = playerList.map(player => player.wallet) //aqui que retorno ["",""] los adres asi
-            let currentPlayerWallet = playerAddress.length>0 ?playerAddress[0]:""
-            await updateDoc(game.gameDoc, {
-                currentPlayerWallet: currentPlayerWallet,
-                players: playerList,
-                playersWallets: playerAddress
-            });
-        } else{
-            await updateDoc(game.gameDoc, { status: "completed" });
-        }
-        
-        setNotifyCurrentRoom(null);
-        setIsSpectator(true);
+      } else {
+        // Para cualquier otro estado, marcar como completado
+        await updateDoc(game.gameDoc, { status: "completed" });
+      }
+
+      setNotifyCurrentRoom(null);
+      setIsSpectator(true);
+    } catch (error) {
+      console.error("Error al salir del juego:", error);
+      // Aquí puedes añadir una notificación de error para el usuario
     }
-    setLoading(false)
+  }
+  setLoading(false);
   };
 
   const { theme } = useTheme();
