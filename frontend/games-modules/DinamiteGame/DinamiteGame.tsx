@@ -7,6 +7,7 @@ import * as Ably from 'ably';
 // import { fabricGif, FabricGifImage } from './utils/fabricGif';
 import { changePlayerSVG, setupArena, setupDecorativeElements } from './components/ElementGame';
 import GameCounter from './components/GameCounter';
+import { notificateStore } from '@/store/notificateStore';
 
 
 interface Player {
@@ -17,6 +18,7 @@ interface Player {
   color: string;
   hasDynamite: boolean;
   isDead: boolean;
+  wallet: string;
 }
 
 interface GameState {
@@ -25,7 +27,8 @@ interface GameState {
   explosionTime: number;
   winner:string|null;
   isStart:boolean;
-  winnerWallet:string
+  winnerWallet:string;
+  status: string
 }
 
 const COLORS = ['red', 'blue', 'green', 'yellow', 'purple', 'orange', 'pink', 'cyan'];
@@ -48,7 +51,8 @@ const PLAYER_RADIUS = 16;
   const [showCounter, setShowCounter] = useState(false);
   const [showWinnerAlert, setShowWinnerAlert] = useState(false);
   const [winnerInfo, setWinnerInfo] = useState<{ id: string; color: string, wallet:string } | null>(null);
-
+  const { currentRoom, isSpectator } = notificateStore();
+  //const { selectedGame, setNotifyCurrentRoom, setIsSpectator } = notificateStore();
 
   const { account } = useWallet();
 
@@ -61,8 +65,8 @@ const PLAYER_RADIUS = 16;
       setShowWinnerAlert(true);
     }
 
-    if (gameState && (gameState.explosionTime && Date.now() >= gameState.explosionTime)) {
-      const gameRef = doc(db, 'games_ably', "G4wc5hMBwefzX3r6bJ0W");
+    if (gameState && (gameState.explosionTime && Date.now() >= gameState.explosionTime) && currentRoom) {
+      const gameRef = doc(db, 'games_ably', currentRoom);
       handleExplosion(gameState, gameRef);
     }
     // fabricGif(
@@ -84,7 +88,7 @@ const PLAYER_RADIUS = 16;
     //   canvas?.renderAll();
     //   fabric.util.requestAnimFrame(render);
     // }); 
-  }, [gameState]);
+  }, [gameState, currentRoom]);
 
   useEffect(() => {
     if (account?.address) {
@@ -106,7 +110,7 @@ const PLAYER_RADIUS = 16;
   }, [account?.address]);
 
   const handleKeyDown = useCallback(async (e: KeyboardEvent) => {
-    if (!playerId || !canvas) return;
+    if (!playerId || !canvas || !currentRoom) return;
     // if(!gameState?.isStart) return
     const player = gameState?.players.find((p:any) => p.id === playerId);
     if (!player) return;
@@ -221,7 +225,7 @@ const PLAYER_RADIUS = 16;
     if(gifref.current==1) return
     gifref.current+=1
 
-    if (!account?.address || !canvasRef.current) return;
+    if (!account?.address || !canvasRef.current || !currentRoom) return;
     
     const fabricCanvas = new fabric.Canvas(canvasRef.current, {
       width: 400,
@@ -247,7 +251,10 @@ const PLAYER_RADIUS = 16;
 
     await joinGame();
 
-    const gameRef = doc(db, 'games_ably', "G4wc5hMBwefzX3r6bJ0W");
+    const gameRef = doc(db, 'games_ably', currentRoom);
+
+    const gamDoc = await getDoc(gameRef)
+    
     onSnapshot(gameRef, async (snapshot) => {
       const newGameState = snapshot.data() as GameState;
       console.log("firebase doble")
@@ -269,17 +276,20 @@ const PLAYER_RADIUS = 16;
             return newPlayer;
           });
         }
-        if(!newGameState.isStart && newGameState.players.length == MAX_PLAYERS){
-          await updateDoc(snapshot.ref, {isStart:!newGameState.isStart})
+        if(!newGameState.isStart && newGameState.players.length == MAX_PLAYERS && newGameState.status == "waiting"){
+          await updateDoc(snapshot.ref, {isStart:!newGameState.isStart, status:"live"})
           setShowCounter(true);
         }
       
+        console.log(newGameState)
         setGameState(newGameState);
         updateCanvas(fabricCanvas, newGameState);
       }
     });
 
-    const gameChannel = ablyInstance.channels.get('game-1726685339198');
+    const gameData = gamDoc.data()
+    console.log(gameData?.channel)
+    const gameChannel = ablyInstance.channels.get(gameData?.channel);
     setChannel(gameChannel);
 
     gameChannel.subscribe('playerMove', (message) => {
@@ -299,13 +309,13 @@ const PLAYER_RADIUS = 16;
     if (!account?.address) return;
 
     try {
-      const playerQuery = query(collection(db, 'players_ably'), where('wallet', '==', account.address));
+      const playerQuery = query(collection(db, 'players'), where('wallet', '==', account.address));
       const playerSnapshot = await getDocs(playerQuery);
       
       let playerId = playerSnapshot.docs[0].id
       setPlayerId(playerSnapshot.docs[0].id);
       
-      const gameRef = doc(db, 'games_ably', "G4wc5hMBwefzX3r6bJ0W");
+      const gameRef = doc(db, 'games_ably', currentRoom!);
       const gameDoc = await getDoc(gameRef);
 
       if (gameDoc.exists()) {
@@ -330,7 +340,8 @@ const PLAYER_RADIUS = 16;
             angle: rotationAngleDegrees,
             color: COLORS[currentGame.players.length],
             hasDynamite: false,//currentGame.players.length === 0
-            isDead:false
+            isDead:false,
+            wallet: account?.address
           };
           const updatedPlayers = [...currentGame.players, newPlayer];
           await updateDoc(gameRef, { 
@@ -473,7 +484,7 @@ const PLAYER_RADIUS = 16;
       players: updatedPlayers
     }));
 
-    const gameRef = doc(db, 'games_ably', "G4wc5hMBwefzX3r6bJ0W");
+    const gameRef = doc(db, 'games_ably', currentRoom!);
     await updateDoc(gameRef, {
       dynamiteHolder: newHolderId,
       explosionTime: Date.now() + getRandomExplosionTime(),
@@ -493,7 +504,7 @@ const PLAYER_RADIUS = 16;
         const randomPlayer = alivePlayers[Math.floor(Math.random() * alivePlayers.length)];
         console.log(randomPlayer.id)
         // await updateDynamiteHolder(randomPlayer.id);
-        const gameRef = doc(db, 'games_ably', "G4wc5hMBwefzX3r6bJ0W");
+        const gameRef = doc(db, 'games_ably', currentRoom!);
         await updateDoc(gameRef, {
           dynamiteHolder: randomPlayer.id,
           explosionTime: Date.now() + getRandomExplosionTime(),
@@ -530,8 +541,8 @@ const PLAYER_RADIUS = 16;
     const alivePlayers = updatedPlayers.filter(p => !p.isDead);
 
     let winnerId = null;
-    let newDynamiteHolder = null;
-    let newExplosionTime = null;
+    let newDynamiteHolder = "";
+    let newExplosionTime = 0;
 
     if (alivePlayers.length === 1) {
       winnerId = alivePlayers[0].id;
@@ -541,7 +552,7 @@ const PLAYER_RADIUS = 16;
     }
     if(!winnerId) return
 
-    const playerRef = doc(db, 'players_ably', winnerId);
+    const playerRef = doc(db, 'players', winnerId);
     const gameDoc = await getDoc(playerRef);
     const player = gameDoc.data()
 
