@@ -87,7 +87,7 @@ const BetInput = ({ label, value, onChange, disabled = false }) => {
 };
 
 //@ts-ignore
-const NumberInput = ({ label, value, onChange, disabled=false, min = 2, max = 2 }) => {
+const NumberInput = ({ label, value, onChange, disabled=false, min = 2, max = 4 }) => {
     const handleIncrement = () => {
       const newValue = Math.min(value + 1, max);
       onChange({ target: { value: newValue } });
@@ -132,7 +132,7 @@ const NumberInput = ({ label, value, onChange, disabled=false, min = 2, max = 2 
             +
           </button>
         </div>
-        <div className='text-yellow-800 text-xs'>version beta only 2 players</div>
+        <div className='text-yellow-800 text-xs'>version beta max 4 players</div>
       </div>
     );
 };

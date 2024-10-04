@@ -8,6 +8,8 @@ import * as Ably from 'ably';
 import { changePlayerSVG, setupArena, setupDecorativeElements } from './components/ElementGame';
 import GameCounter from './components/GameCounter';
 import { notificateStore } from '@/store/notificateStore';
+import WonOrLostModal from './components/WonOrLostModal';
+import { ABLY_KEY } from "@/constants";
 
 
 interface Player {
@@ -28,11 +30,15 @@ interface GameState {
   winner:string|null;
   isStart:boolean;
   winnerWallet:string;
-  status: string
+  status: string;
+  roomIdContract: number;
+  totalPlayers: number;
+  isBettingRoom: boolean;
+  betAmount:any
 }
 
 const COLORS = ['red', 'blue', 'green', 'yellow', 'purple', 'orange', 'pink', 'cyan'];
-const MAX_PLAYERS = 2;
+// const MAX_PLAYERS = 2;
 const ARENA_RADIUS = 180;
 const PLAYER_RADIUS = 16;
 
@@ -52,6 +58,11 @@ const PLAYER_RADIUS = 16;
   const [showWinnerAlert, setShowWinnerAlert] = useState(false);
   const [winnerInfo, setWinnerInfo] = useState<{ id: string; color: string, wallet:string } | null>(null);
   const { currentRoom } = notificateStore();
+  const [isModalOpen, setModalOpen] = useState(false);
+  const [statusContractGame, setStatusContractGame] = useState('');
+  const [isWon, setIsWon] = useState(false);
+  const [wonAmount, setWonAmount] = useState(0);
+
   //const { selectedGame, setNotifyCurrentRoom, setIsSpectator } = notificateStore();
 
   const { account } = useWallet();
@@ -60,9 +71,17 @@ const PLAYER_RADIUS = 16;
   useEffect(() => {
     gameStateRef.current = gameState;
     if (gameState?.winner) {
+      console.log(gameState)
+      let amount = parseFloat(gameState?.betAmount)
+      amount = amount * gameState.totalPlayers
+      setWonAmount(amount)
+      setIsWon(gameState?.winnerWallet === account?.address)
+      let statusGame = `${gameState.winner}winner`
+      setStatusContractGame(statusGame)
       const winner = gameState.players.find(p => p.id === gameState.winner);
       setWinnerInfo({ id: winner!.id, color: winner!.color, wallet: gameState?.winnerWallet});
-      setShowWinnerAlert(true);
+      //setShowWinnerAlert(true);
+      setModalOpen(true)
     }
 
     if (gameState && (gameState.explosionTime && Date.now() >= gameState.explosionTime) && currentRoom) {
@@ -246,7 +265,8 @@ const PLAYER_RADIUS = 16;
   
     setCanvas(fabricCanvas);
 
-    const ablyInstance = new Ably.Realtime({ key: 'FPTfgA.aB0wSg:_YyjuDIAGM7aGA_pFp_IS2VEcXLHtZO4Ibg9Anu_NiI' });
+    const ablyInstance = new Ably.Realtime({ key: ABLY_KEY });
+    
     setAbly(ablyInstance);
 
     await joinGame();
@@ -276,7 +296,7 @@ const PLAYER_RADIUS = 16;
             return newPlayer;
           });
         }
-        if(!newGameState.isStart && newGameState.players.length == MAX_PLAYERS && newGameState.status == "waiting"){
+        if(!newGameState.isStart && newGameState.players.length == newGameState.totalPlayers && newGameState.status == "waiting"){
           await updateDoc(snapshot.ref, {isStart:!newGameState.isStart, status:"live"})
           setShowCounter(true);
         }
@@ -322,9 +342,9 @@ const PLAYER_RADIUS = 16;
         const currentGame = gameDoc.data() as GameState;
         const existingPlayer = currentGame.players.find(p => p.id === playerId);
 
-        if (!existingPlayer && currentGame.players.length < MAX_PLAYERS) {
+        if (!existingPlayer && currentGame.players.length < currentGame.totalPlayers) {
           const playerIndex = currentGame.players.length;
-          const angleStep = (2 * Math.PI) / MAX_PLAYERS;
+          const angleStep = (2 * Math.PI) / currentGame.totalPlayers;
           const angle = playerIndex * angleStep;
           
           // Calculamos el ángulo de rotación del jugador
@@ -599,6 +619,17 @@ const PLAYER_RADIUS = 16;
             </div>
           </div>
         )}
+      </div>
+      <div>
+        {gameState && <WonOrLostModal
+          isOpen={isModalOpen}
+          amount= {wonAmount}
+          isBet = {gameState!.isBettingRoom}
+          isWon={isWon}
+          status_game = {statusContractGame}
+          room_code_contract = {gameState!.roomIdContract}
+          onClose={() => setModalOpen(false)}
+        />}
       </div>
     </div>
   );
