@@ -3,9 +3,11 @@ import { useGameStore } from '../../store/gameStore';
 import { doc, getDoc, updateDoc, Timestamp, query, collection, where, getDocs } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 
+import { RoomDetailsDisplay } from './RoomDetailsDisplay'
+import { BettingGames, NonBettingGames, GameRoom } from '../../core/FirestoreGameRoom';
 import { useTheme } from '../ThemeProvider';
 import { notificateStore } from "@/store/notificateStore";
-import {LoadingScreen} from "../common/LoadingScreen";
+import { LoadingScreen } from "../common/LoadingScreen";
 import Grid from '../common/Grid';
 import { FirestoreGame } from '@/core/firebaseGame';
 import { useWallet } from "@aptos-labs/wallet-adapter-react";
@@ -14,8 +16,10 @@ import WonOrLostModal from '../common/WonOrLostModal';
 export function GameBoard() {
   const [onlyValidation, setOnlyValidation] = useState(0);
   const { account } = useWallet();
-
+  const [countdown, setCountdown] = useState<number | null>(null);
   const { game, grid, currentPlayer, initializeGame, addAtom, players } = useGameStore();
+  const [roomsNoBet, setRoomsNoBet] = useState<GameRoom[]>([]);
+  const [roomsBet, setRoomsBet] = useState<GameRoom[]>([]);
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const [gameStarted, setGameStarted] = useState(false);
   const [waitingForOpponent, setWaitingForOpponent] = useState(false);
@@ -29,14 +33,57 @@ export function GameBoard() {
   const [roomCodeContract, setRoomCodeContract] = useState(0);
   const [isBettingRoom, setIsBettingRoom] = useState(false);
 
-  const winner = players.find(player => player.winner==true);
+  // Acceder a los jugadores
+  const gamePlayers = game?.players;
+  console.log(gamePlayers);
+
+  const winner = players.find(player => player.winner == true);
+
+  useEffect(() => {
+    if (game && players.length === 2 && players.every(player => player.play === true) && game.status !== "live" && !winner) {
+      setCountdown(10); // Inicia el contador en 10 segundos
+    }
+  }, [game, players, winner]);
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (countdown !== null && countdown > 0) {
+      timer = setTimeout(() => {
+        setCountdown(countdown - 1);
+      }, 1000);
+    } else if (countdown === 0) {
+      // Inicia el juego
+      if (game) {
+        game.turnEndTime = Timestamp.now().toMillis() + 30000;
+        game.startGame();
+        setGameStarted(true);
+        setCountdown(null);
+      }
+    }
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
+  }, [countdown, game]);
+
+
+  useEffect(() => {
+    const nonBettingGames = new NonBettingGames();
+    nonBettingGames.onSnapshot((updatedRooms) => {
+      setRoomsNoBet(updatedRooms);
+    });
+
+    const bettingGames = new BettingGames();
+    bettingGames.onSnapshot((updatedRooms) => {
+      setRoomsBet(updatedRooms);
+    });
+  }, [])
 
   useEffect(() => {
     setOnlyValidation(0)
-    setGameStarted(false) 
+    setGameStarted(false)
     setWaitingForOpponent(false)
     if (currentRoom) {
-      
+
       const fetchGame = async () => {
         const gameDoc = doc(db, 'games', currentRoom);
         const docSnap = await getDoc(gameDoc);
@@ -53,7 +100,7 @@ export function GameBoard() {
           // if (data.status === 'completed' && winner) {
           //   initializeGame(8, 8, currentRoom, data.players);
           // }
-          
+
           // else {
           //   console.log("El juego ha finalizado.");
           // }
@@ -65,7 +112,7 @@ export function GameBoard() {
 
   useEffect(() => {
     const timer = setInterval(() => {
-      const winner = game?.players.find(player => player.winner==true);
+      const winner = game?.players.find(player => player.winner == true);
       if (!winner && game && game.turnEndTime) {
         const timeRemaining = game.turnEndTime - Timestamp.now().toMillis();
         setTimeLeft(timeRemaining > 0 ? timeRemaining : 0);
@@ -76,86 +123,86 @@ export function GameBoard() {
       }
     }, 1000);
     return () => clearInterval(timer);
-    
+
   }, [game, account?.address, selectedGame]);
 
   useEffect(() => {
-    if(game?.status == 'live' && winner){
-      if(winner.wallet==account?.address){
-        let amount = parseFloat(game?.betAmount) 
+    if (game?.status == 'live' && winner) {
+      if (winner.wallet == account?.address) {
+        let amount = parseFloat(game?.betAmount)
         //console.log(game?.isBettingRoom)
         let statusGame = `${winner.moves}winner`
         let roomCodeContract = game?.roomIdContract
-        modalWonOrLostModal(amount,game?.isBettingRoom,statusGame,roomCodeContract,true)
-      }else{
-        modalWonOrLostModal(0,game?.isBettingRoom,'',0,false)
+        modalWonOrLostModal(amount, game?.isBettingRoom, statusGame, roomCodeContract, true)
+      } else {
+        modalWonOrLostModal(0, game?.isBettingRoom, '', 0, false)
       }
     }
   }, [winner, account?.address, selectedGame]);
 
-  async function updatPLayer(game:FirestoreGame, isExit:Boolean){
+  async function updatPLayer(game: FirestoreGame, isExit: Boolean) {
 
-    
-    if(onlyValidation>0) return
-    const winner = game?.players.find(player => player.winner==true);
-    const lost = game?.players.find(player => player.winner==false);
-    
-    
-    if( game && winner && game.status === "live" && winner?.wallet === account?.address){
-        const playerQuery = query(collection(db, 'players'), where('wallet', '==', winner?.wallet));
-        const playerSnapshot = await getDocs(playerQuery);
-        if(!playerSnapshot.empty){
-            let playerData: any = null;
-            playerSnapshot.forEach((doc) => {
-                playerData = doc.data();
-            });
-            const playerDocRef = doc(db, 'players', playerSnapshot.docs[0].id);
 
-            await updateDoc(playerDocRef, { winCount:playerData.winCount+1});
-            setOnlyValidation(onlyValidation+1)
-        }
+    if (onlyValidation > 0) return
+    const winner = game?.players.find(player => player.winner == true);
+    const lost = game?.players.find(player => player.winner == false);
+
+
+    if (game && winner && game.status === "live" && winner?.wallet === account?.address) {
+      const playerQuery = query(collection(db, 'players'), where('wallet', '==', winner?.wallet));
+      const playerSnapshot = await getDocs(playerQuery);
+      if (!playerSnapshot.empty) {
+        let playerData: any = null;
+        playerSnapshot.forEach((doc) => {
+          playerData = doc.data();
+        });
+        const playerDocRef = doc(db, 'players', playerSnapshot.docs[0].id);
+
+        await updateDoc(playerDocRef, { winCount: playerData.winCount + 1 });
+        setOnlyValidation(onlyValidation + 1)
+      }
     }
-    
-    if( game && winner && game.status === "live" && (lost?.wallet === account?.address||isExit)){
+
+    if (game && winner && game.status === "live" && (lost?.wallet === account?.address || isExit)) {
       //console.log("lost")
       //console.log(lost?.wallet)
-        const playerQuery = query(collection(db, 'players'), where('wallet', '==', lost?.wallet));
-        const playerSnapshot = await getDocs(playerQuery);
-        if(!playerSnapshot.empty){
-            let playerData: any = null;
-            playerSnapshot.forEach((doc) => {
-                playerData = doc.data();
-            });
-            const playerDocRef = doc(db, 'players', playerSnapshot.docs[0].id);
-            await updateDoc(playerDocRef, { lostCount:playerData.lostCount+1});
-            setOnlyValidation(onlyValidation+1)
-        }
-        
+      const playerQuery = query(collection(db, 'players'), where('wallet', '==', lost?.wallet));
+      const playerSnapshot = await getDocs(playerQuery);
+      if (!playerSnapshot.empty) {
+        let playerData: any = null;
+        playerSnapshot.forEach((doc) => {
+          playerData = doc.data();
+        });
+        const playerDocRef = doc(db, 'players', playerSnapshot.docs[0].id);
+        await updateDoc(playerDocRef, { lostCount: playerData.lostCount + 1 });
+        setOnlyValidation(onlyValidation + 1)
+      }
+
     }
   }
 
   useEffect(() => {
-    const winner = game?.players.find(player => player.winner==true);
+    const winner = game?.players.find(player => player.winner == true);
     if (game && players.length >= 2 && players.every(player => player.play === true) && game.status && game.status !== "live" && !game?.turnEndTime && !winner) {
       game.turnEndTime = Timestamp.now().toMillis() + 30000; // 30 segundos en el futuro
       //console.log("ingresa en comando start to live")
       game.startGame(); // Cambiar el estado a "live"
       setGameStarted(true);
     }
-  
+
 
     // if (winner && game && game.status && game.status !== "completed") {
     //     updatPLayer(game, false)
     //     game.completeGame(); // Cambiar el estado a "completed"
     // }
-  
+
     if (game && players.length >= 2 && players.every(player => player.play === true)) {
       setWaitingForOpponent(false);
       setGameStarted(true);
     } else {
       setWaitingForOpponent(true);
     }
-  
+
     if (game) {
       let playerAddress = game.players.find(vl => vl.wallet === account?.address);
       if (playerAddress && playerAddress.play && !winner) {
@@ -170,17 +217,24 @@ export function GameBoard() {
       if (playerIndex !== -1) {
         game.players[playerIndex].play = true;
         await updateDoc(game.gameDoc, { players: game.players });
-        // if (game && players.length >= 2 && players.every(player => player.play === true)){
-        //     setWaitingForOpponent(false);
-        // }else {
-        //     setWaitingForOpponent(true);
-        // }
+        console.log('Player is ready to play');
       }
     }
   };
 
+  // Auto-iniciar el juego cuando todos los jugadores estén listos
+  useEffect(() => {
+    if (game && game.players?.length >= 2 && game.players.every(player => player.play === true)) {
+      setGameStarted(true);
+      console.log('Game started automatically');
+    } else {
+      // Llama a startGame para actualizar el estado del jugador cuando no todos están listos
+      startGame(); // Aquí llamamos a startGame
+    }
+  }, [game, game?.players]); // Asegúrate de incluir 'game' y 'game?.players' en las dependencias
+
   const handleClick = (row: number, col: number) => {
-    const winner = game?.players.find(player => player.winner==true);
+    const winner = game?.players.find(player => player.winner == true);
     if (game && !winner && account?.address && currentPlayer?.wallet === account?.address && players.every(player => player.play === true) && game.status && game.status === "live") {
       addAtom(row, col);
     } else {
@@ -195,64 +249,64 @@ export function GameBoard() {
 
   const exitGame = async () => {
     setLoading(true);
-  if (currentRoom && game) {
-    try {
-      const playerQuery = query(collection(db, 'players'), where('wallet', '==', account?.address));
-      const playerSnapshot = await getDocs(playerQuery);
-      const playerDocRef = doc(db, 'players', playerSnapshot.docs[0].id);
-      await updateDoc(playerDocRef, { actualRoom: "" });
+    if (currentRoom && game) {
+      try {
+        const playerQuery = query(collection(db, 'players'), where('wallet', '==', account?.address));
+        const playerSnapshot = await getDocs(playerQuery);
+        const playerDocRef = doc(db, 'players', playerSnapshot.docs[0].id);
+        await updateDoc(playerDocRef, { actualRoom: "" });
 
-      const isCreator = game.players[0].wallet === account?.address;
-      const isOnlyPlayer = game.players.length === 1;
+        const isCreator = game.players[0].wallet === account?.address;
+        const isOnlyPlayer = game.players.length === 1;
 
-      if (isCreator && isOnlyPlayer && game.status === "waiting") {
-        // El creador sale cuando aún no se han unido otros jugadores
-        await updateDoc(game.gameDoc, { 
-          status: "leave",
-          players: [],
-          playersWallets: []
-        });
-      } else if (game.status === "waiting") {
-        // Otros jugadores salen durante el estado de espera
-        let playerList = game.players.filter(vl => vl.wallet !== account?.address);
-        let playerAddress = playerList.map(player => player.wallet);
-        let currentPlayerWallet = playerAddress.length > 0 ? playerAddress[0] : "";
-        await updateDoc(game.gameDoc, {
-          currentPlayerWallet: currentPlayerWallet,
-          players: playerList,
-          playersWallets: playerAddress
-        });
-      } else if (game.status === "live") {
-        // Un jugador sale durante el juego en vivo
-        const winner = game.players.find((vl) => vl.winner === true);
-        if (!winner) {
-          game.players = game.players.map(vl => {
-            if (account?.address !== vl.wallet) {
-              vl.winner = true;
-            }
-            return vl;
+        if (isCreator && isOnlyPlayer && game.status === "waiting") {
+          // El creador sale cuando aún no se han unido otros jugadores
+          await updateDoc(game.gameDoc, {
+            status: "leave",
+            players: [],
+            playersWallets: []
           });
-          await updatPLayer(game, true);
-          await updateDoc(game.gameDoc, { players: game.players, status: "completed" });
+        } else if (game.status === "waiting") {
+          // Otros jugadores salen durante el estado de espera
+          let playerList = game.players.filter(vl => vl.wallet !== account?.address);
+          let playerAddress = playerList.map(player => player.wallet);
+          let currentPlayerWallet = playerAddress.length > 0 ? playerAddress[0] : "";
+          await updateDoc(game.gameDoc, {
+            currentPlayerWallet: currentPlayerWallet,
+            players: playerList,
+            playersWallets: playerAddress
+          });
+        } else if (game.status === "live") {
+          // Un jugador sale durante el juego en vivo
+          const winner = game.players.find((vl) => vl.winner === true);
+          if (!winner) {
+            game.players = game.players.map(vl => {
+              if (account?.address !== vl.wallet) {
+                vl.winner = true;
+              }
+              return vl;
+            });
+            await updatPLayer(game, true);
+            await updateDoc(game.gameDoc, { players: game.players, status: "completed" });
+          }
+        } else {
+          // Para cualquier otro estado, marcar como completado
+          await updateDoc(game.gameDoc, { status: "completed" });
         }
-      } else {
-        // Para cualquier otro estado, marcar como completado
-        await updateDoc(game.gameDoc, { status: "completed" });
-      }
 
-      setNotifyCurrentRoom(null);
-      setIsSpectator(true);
-    } catch (error) {
-      console.error("Error al salir del juego:", error);
-      // Aquí puedes añadir una notificación de error para el usuario
+        setNotifyCurrentRoom(null);
+        setIsSpectator(true);
+      } catch (error) {
+        console.error("Error al salir del juego:", error);
+        // Aquí puedes añadir una notificación de error para el usuario
+      }
     }
-  }
-  setLoading(false);
+    setLoading(false);
   };
 
   const { theme } = useTheme();
 
-  function modalWonOrLostModal(amount:any, isBet:any, status_game:string, room_code:number, is_won:boolean){
+  function modalWonOrLostModal(amount: any, isBet: any, status_game: string, room_code: number, is_won: boolean) {
     setIsBettingRoom(isBet)
     setWonAmount(amount)
     setIsWon(is_won)
@@ -295,16 +349,34 @@ export function GameBoard() {
         <p style={textStyle}>Ganador: {winner.color} [{formatAddress(winner.wallet)}]</p>
       ) : (
         <div>
-          <button 
-            style={gameStarted ? disabledButtonStyle : buttonStyle} 
-            onClick={startGame} 
-            disabled={gameStarted}
-          >
-            Iniciar Juego
-          </button>
+          <div className="grid grid-rows-3 grid-flow-col gap-4">
+            <div className=" row-span-2 ...">
+             {/*  <button
+              style={gameStarted ? disabledButtonStyle : buttonStyle}
+              onClick={startGame}
+              disabled={gameStarted}
+            >
+              Start Game
+            </button>
+ */}
+
+              {countdown !== null && (
+                <div className="text-center py-4">
+                  <p className="text-2xl font-bold">
+                    La partida comenzará en: {countdown}
+                  </p>
+                </div>
+              )}
+            </div>
+            <div className=" row-span-2 ...">
+              <RoomDetailsDisplay />
+            </div>
+          </div>
+
+
           {gameStarted && (
             <div>
-              {waitingForOpponent && <p style={textStyle}>Esperando que el otro jugador esté listo...</p>}    
+              {waitingForOpponent && <p style={textStyle}>Esperando que el otro jugador esté listo...</p>}
             </div>
           )}
           <p style={textStyle}>Turno de: {currentPlayer?.color} [{formatAddress(currentPlayer?.wallet || '')}]</p>
@@ -312,15 +384,16 @@ export function GameBoard() {
             {timeLeft !== null && <p style={textStyle}>Tiempo restante: {Math.ceil(timeLeft / 1000)}s</p>}
             <progress style={progressStyle} value={timeLeft ? (30000 - timeLeft) : 0} max="30000" />
           </div>
+
         </div>
       )}
 
-      <Grid 
-        grid={grid} 
-        isBet={game && game.isBettingRoom} 
-        handleClick={handleClick} 
-        primaryColor="blue" 
-      />        
+      <Grid
+        grid={grid}
+        isBet={game && game.isBettingRoom}
+        handleClick={handleClick}
+        primaryColor="blue"
+      />
 
       {!isSpectator && (
         <button style={buttonStyle} onClick={exitGame}>
@@ -330,11 +403,11 @@ export function GameBoard() {
 
       <WonOrLostModal
         isOpen={isModalOpen}
-        amount= {wonAmount}
-        isBet = {isBettingRoom}
+        amount={wonAmount}
+        isBet={isBettingRoom}
         isWon={isWon}
-        status_game = {statusGame}
-        room_code_contract = {roomCodeContract}
+        status_game={statusGame}
+        room_code_contract={roomCodeContract}
         onClose={() => setModalOpen(false)}
       />
     </div>

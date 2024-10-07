@@ -163,36 +163,18 @@ const WonOrLostModal: React.FC<Withdraw> = ({ isOpen, amount, isBet, isWon, stat
                         )}
                     </div>
 
-                    {isWon ? (
-                        isBet ? (
-                            // Ganador en sala de apuestas
+                    {isWon && isBet? (
+                        <>
                             <div className="space-y-4">
                                 <GameButton onClick={onClaimPrize} color="bg-yellow-500" color_hover="bg-yellow-550" className='border-yellow-700 w-full'>
                                     <div className='flex items-center justify-center space-x-2'>
                                         <Award fill="currentColor" size={20} />
-                                        <span>Claim Prize</span>
+                                        <span>Claim</span>
                                     </div>
                                 </GameButton>
                             </div>
-                        ) : (
-                            // Ganador en sala sin apuestas
-                            <div className="space-y-4">
-                                <p className="text-lg font-semibold text-white text-center mb-4">Congratulations!</p>
-                                <GameButton onClick={() => { onPlayHome; endGame }} color="bg-blue-500" color_hover="bg-blue-550" className='border-blue-700 w-full'>
-                                    <div className='flex items-center justify-center space-x-2'>
-                                        <Home size={20} />
-                                        <span>Home</span>
-                                    </div>
-                                </GameButton>
-                                <GameButton onClick={onPlayRoom} color="bg-green-500" color_hover="bg-green-550" className='border-green-700 w-full'>
-                                    <div className='flex items-center justify-center space-x-2'>
-                                        <PlayCircle size={20} />
-                                        <span>Rooms</span>
-                                    </div>
-                                </GameButton>
-                            </div>
-                        )
-                    ) : (
+                        </>
+                    ):(
                         <>
                             <div className="space-y-4 mb-4">
                                 <GameButton onClick={onPlayHome} color="bg-blue-500" color_hover="bg-blue-550" className='border-blue-700 w-full'>

@@ -5,6 +5,7 @@ interface Player {
   color: string;
   wallet: string;
   winner: boolean;
+  play: boolean;
 }
 
 interface GameRoom {
