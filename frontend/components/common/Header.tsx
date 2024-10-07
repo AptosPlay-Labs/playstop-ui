@@ -3,9 +3,12 @@
 import { Moon, Sun } from "lucide-react"; // Asumiendo que estás usando lucide-react para iconos
 import { useTheme } from '../ThemeProvider';
 import { WalletSelector } from "../WalletSelector";
+// import { notificateStore } from "@/store/notificateStore";
 
 export function Header() {
   const { theme, toggleTheme } = useTheme();
+  // const { setSelectedGame} = notificateStore();
+
   //const { address } = notificateStore();
 
   const toggleColorMode = () => {
@@ -25,16 +28,19 @@ export function Header() {
     <header className="z-10"> 
       <div className="container mx-auto px-4 py-4">
         <div className="flex justify-between items-center">
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-4 cursor-pointer">
             {/* <ChainReactionIcon /> */}
             <img className="w-16 h-16" src="./favicon.png" alt="" />
             {/* <h1 className="text-2xl font-bold text-gray-800 dark:text-white">PlayStop.fun</h1> */}
+            
             <h1 className="text-2xl font-bold text-gray-800 dark:text-[#46dc8e]">PlayStop.fun</h1>
+
           </div>
           
           
-
+          
           <div className="flex items-center space-x-4">
+            <span className="font-bold text-xl">Tesnet</span>
             <WalletSelector />
             {/* {address && (
               <div className="flex items-center space-x-2 bg-gray-100 dark:bg-gray-700 rounded-full py-1 px-3">

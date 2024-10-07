@@ -85,7 +85,7 @@ export function changePlayerSVG(fabricCanvas: fabric.Canvas, playerId: string, n
       // Reemplaza el grupo antiguo con el nuevo
       fabricCanvas.remove(playerObject);
       fabricCanvas.add(newGroup);
-      //fabricCanvas.renderAll();
+      fabricCanvas.requestRenderAll();
 
       // Asegúrate de que el nuevo grupo esté en la misma posición en el stack
       //newGroup.moveTo(playerObject.getObjects().indexOf(dynamite!));
