@@ -25,6 +25,8 @@ interface GameRoom {
   winnerWallet: string;
 }
 
+
+
 class BettingGames {
   private roomsCollection = collection(db, 'games_ably');
   private onSnapshotCallback: ((rooms: GameRoom[]) => void) | null = null;
