@@ -3,11 +3,11 @@
 import { Moon, Sun } from "lucide-react"; // Asumiendo que estás usando lucide-react para iconos
 import { useTheme } from '../ThemeProvider';
 import { WalletSelector } from "../WalletSelector";
-import { notificateStore } from "@/store/notificateStore";
+// import { notificateStore } from "@/store/notificateStore";
 
 export function Header() {
   const { theme, toggleTheme } = useTheme();
-  const { setSelectedGame} = notificateStore();
+  // const { setSelectedGame} = notificateStore();
 
   //const { address } = notificateStore();
 
