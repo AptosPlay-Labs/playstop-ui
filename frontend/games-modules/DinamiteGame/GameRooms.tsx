@@ -222,27 +222,6 @@ export function GameRooms() {
     }
 
     if (room.players.length < room.totalPlayers && !room.isStart) {
-      const gameDocRef = doc(db, 'games_ably', room.id);
-      // const newPlayer = {
-      //   color: room.players.length === 0 ? 'red' : 'blue',
-      //   moves: 0,
-      //   play: false,
-      //   wallet: account?.address,
-      //   winner: false,
-      // };
-      // let newCurrentplayer = (existingGame && existingGame.currentPlayerWallet && (existingGame.currentPlayerWallet !== "")) ? existingGame.currentPlayerWallet : account?.address;
-
-    
-      //esto uede generar error en caso se unan 2 usuarios al mismo tiempo.
-      await updateDoc(gameDocRef, {
-        playersWallets: [...room.playersWallets, account?.address]
-      });
-
-      if (playerData) {
-        const playerDocRef = doc(db, 'players', playerSnapshot.docs[0].id);
-        await updateDoc(playerDocRef, { actualRoom: room.id });
-      }
-
       //aqui enivar al contrato transaccion
 
       setCurrentRoom(room.id);

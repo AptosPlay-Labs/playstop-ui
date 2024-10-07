@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { fabric } from 'fabric';
-import { addDoc, collection, doc, getDocs, query, onSnapshot, updateDoc, where, getDoc } from 'firebase/firestore';
+import { addDoc, collection, doc, getDocs, query, onSnapshot, updateDoc, where, getDoc, runTransaction } from 'firebase/firestore';
 import { db } from '@/config/firebase';
 import { useWallet } from '@aptos-labs/wallet-adapter-react';
 import * as Ably from 'ably';
@@ -34,7 +34,8 @@ interface GameState {
   roomIdContract: number;
   totalPlayers: number;
   isBettingRoom: boolean;
-  betAmount:any
+  betAmount:any;
+  playersWallets:string[]
 }
 
 const COLORS = ['red', 'blue', 'green', 'yellow', 'purple', 'orange', 'pink', 'cyan'];
@@ -54,21 +55,25 @@ const PLAYER_RADIUS = 16;
   const [channel, setChannel] = useState<Ably.RealtimeChannel | null>(null);
   const gameStateRef = useRef<any>(null);
   const gifref = useRef<any>(null);
+  const startCountRef = useRef<any>(0);
   const [showCounter, setShowCounter] = useState(false);
-  const [showWinnerAlert, setShowWinnerAlert] = useState(false);
-  const [winnerInfo, setWinnerInfo] = useState<{ id: string; color: string, wallet:string } | null>(null);
   const { currentRoom } = notificateStore();
   const [isModalOpen, setModalOpen] = useState(false);
   const [statusContractGame, setStatusContractGame] = useState('');
   const [isWon, setIsWon] = useState(false);
+  const [isPlayEnd, setIsPlayEnd] = useState(false);
   const [wonAmount, setWonAmount] = useState(0);
   const playGameAfterStart = useRef(false);
+  const explosionTimeoutRef = useRef<any>(null);
+  const startDynamitePassingTimeoutRef = useRef<any>(null);
   //const { selectedGame, setNotifyCurrentRoom, setIsSpectator } = notificateStore();
+  const { setNotifyCurrentRoom, setIsSpectator } = notificateStore();
 
   const { account } = useWallet();
 
   
   useEffect(() => {
+    
     gameStateRef.current = gameState;
     if (gameState?.winner) {
       playGameAfterStart.current=false
@@ -78,12 +83,27 @@ const PLAYER_RADIUS = 16;
       setIsWon(gameState?.winnerWallet === account?.address)
       let statusGame = `${gameState.winner}winner`
       setStatusContractGame(statusGame)
-      const winner = gameState.players.find(p => p.id === gameState.winner);
-      setWinnerInfo({ id: winner!.id, color: winner!.color, wallet: gameState?.winnerWallet});
+      setIsPlayEnd(true)
       //setShowWinnerAlert(true);
       setModalOpen(true)
+    }else{
+
+      let playerStatus = gameState?.players.find(p=> p.wallet === account?.address)
+
+      if(gameState && playerStatus && playerStatus.isDead){
+        setIsWon(false)
+        setIsPlayEnd(false)
+        setModalOpen(true)
+      }
+
+      // console.log(gameState)
+      if(gameState?.isStart && gameState.winner!='' && gameState.status==="live" && !playerStatus?.isDead){
+        playGameAfterStart.current = true
+      }
+
     }
 
+    
     
     // fabricGif(
     //   "/images/flame.gif",
@@ -108,6 +128,8 @@ const PLAYER_RADIUS = 16;
 
   useEffect(() => {
     if (account?.address) {
+      if(gifref.current==1) return
+        gifref.current+=1
       initializeGame();
     }
     
@@ -240,8 +262,6 @@ const PLAYER_RADIUS = 16;
 
   const initializeGame = async () => {
     //para que no se instancie muchos veces
-    if(gifref.current==1) return
-    gifref.current+=1
 
     if (!account?.address || !canvasRef.current || !currentRoom) return;
     
@@ -294,7 +314,8 @@ const PLAYER_RADIUS = 16;
             return newPlayer;
           });
         }
-        if(!newGameState.isStart && newGameState.players.length == newGameState.totalPlayers && newGameState.status == "waiting"){
+        if(newGameState.players.length == newGameState.totalPlayers && startCountRef.current<1){
+          startCountRef.current+=1
           await updateDoc(snapshot.ref, {isStart:!newGameState.isStart, status:"live"})
           setShowCounter(true);
         }
@@ -321,71 +342,150 @@ const PLAYER_RADIUS = 16;
      
   };
 
+  // const joinGame = async () => {
+  //   if (!account?.address) return;
+
+  //   try {
+  //     const playerQuery = query(collection(db, 'players'), where('wallet', '==', account.address));
+  //     const playerSnapshot = await getDocs(playerQuery);
+      
+  //     let playerId = playerSnapshot.docs[0].id
+  //     setPlayerId(playerSnapshot.docs[0].id);
+      
+  //     const gameRef = doc(db, 'games_ably', currentRoom!);
+  //     const gameDoc = await getDoc(gameRef);
+
+  //     if (gameDoc.exists()) {
+  //       const currentGame = gameDoc.data() as GameState;
+  //       const existingPlayer = currentGame.players.find(p => p.id === playerId);
+
+  //       if (!existingPlayer && currentGame.players.length < currentGame.totalPlayers) {
+  //         const playerIndex = currentGame.players.length;
+  //         const angleStep = (2 * Math.PI) / currentGame.totalPlayers;
+  //         const angle = playerIndex * angleStep;
+          
+  //         // Calculamos el ángulo de rotación del jugador
+  //         let rotationAngle = (angle + Math.PI) % (2 * Math.PI);
+          
+  //         // Convertimos el ángulo de rotación a grados
+  //         let rotationAngleDegrees = (rotationAngle * 180) / Math.PI;
+
+  //         const newPlayer: Player = {
+  //           id: playerId!,
+  //           x: ARENA_RADIUS * Math.cos(angle) + 200,
+  //           y: ARENA_RADIUS * Math.sin(angle) + 200,
+  //           angle: rotationAngleDegrees,
+  //           color: COLORS[currentGame.players.length],
+  //           hasDynamite: false,//currentGame.players.length === 0
+  //           isDead:false,
+  //           wallet: account?.address
+  //         };
+  //         const updatedPlayers = [...currentGame.players, newPlayer];
+  //         await updateDoc(gameRef, { 
+  //           players: updatedPlayers,
+  //           dynamiteHolder: currentGame.players.length === 0 ? playerId : currentGame.dynamiteHolder,
+  //           playersWallets: [...currentGame.playersWallets, account?.address]
+  //         });
+
+  //         const playerDocRef = doc(db, 'players', playerSnapshot.docs[0].id);
+  //         await updateDoc(playerDocRef, { actualRoom: currentRoom });
+          
+  //       }
+  //     } else {
+  //       const gameRoomsCollection = collection(db, 'games_ably');
+  //       const gameData = {
+  //         players: [{
+  //           id: playerId,
+  //           x: 200,
+  //           y: 200,
+  //           color: COLORS[0],
+  //           hasDynamite: true
+  //         }],
+  //         dynamiteHolder: playerId,
+  //         explosionTime: Date.now() + 30000
+  //       };
+  //       await addDoc(gameRoomsCollection, gameData);
+  //     }
+  //   } catch (error) {
+  //     console.error("Error joining game:", error);
+  //     setNotifyCurrentRoom(null);
+  //     setIsSpectator(false);
+  //   }
+  // };  
+
+
   const joinGame = async () => {
     if (!account?.address) return;
-
+  
     try {
       const playerQuery = query(collection(db, 'players'), where('wallet', '==', account.address));
       const playerSnapshot = await getDocs(playerQuery);
       
-      let playerId = playerSnapshot.docs[0].id
+      let playerId = playerSnapshot.docs[0].id;
       setPlayerId(playerSnapshot.docs[0].id);
       
       const gameRef = doc(db, 'games_ably', currentRoom!);
-      const gameDoc = await getDoc(gameRef);
-
-      if (gameDoc.exists()) {
+  
+      await runTransaction(db, async (transaction) => {
+        const gameDoc = await transaction.get(gameRef);
+        
+        if (!gameDoc.exists()) {
+          throw "La sala de juego no existe";
+        }
+  
         const currentGame = gameDoc.data() as GameState;
         const existingPlayer = currentGame.players.find(p => p.id === playerId);
-
-        if (!existingPlayer && currentGame.players.length < currentGame.totalPlayers) {
-          const playerIndex = currentGame.players.length;
-          const angleStep = (2 * Math.PI) / currentGame.totalPlayers;
-          const angle = playerIndex * angleStep;
-          
-          // Calculamos el ángulo de rotación del jugador
-          let rotationAngle = (angle + Math.PI) % (2 * Math.PI);
-          
-          // Convertimos el ángulo de rotación a grados
-          let rotationAngleDegrees = (rotationAngle * 180) / Math.PI;
-
-          const newPlayer: Player = {
-            id: playerId!,
-            x: ARENA_RADIUS * Math.cos(angle) + 200,
-            y: ARENA_RADIUS * Math.sin(angle) + 200,
-            angle: rotationAngleDegrees,
-            color: COLORS[currentGame.players.length],
-            hasDynamite: false,//currentGame.players.length === 0
-            isDead:false,
-            wallet: account?.address
-          };
-          const updatedPlayers = [...currentGame.players, newPlayer];
-          await updateDoc(gameRef, { 
-            players: updatedPlayers,
-            dynamiteHolder: currentGame.players.length === 0 ? playerId : currentGame.dynamiteHolder
-          });
+  
+        if (existingPlayer) {
+          // El jugador ya está en la sala, no necesitamos hacer nada
+          return;
         }
-      } else {
-        const gameRoomsCollection = collection(db, 'games_ably');
-        const gameData = {
-          players: [{
-            id: playerId,
-            x: 200,
-            y: 200,
-            color: COLORS[0],
-            hasDynamite: true
-          }],
-          dynamiteHolder: playerId,
-          explosionTime: Date.now() + 30000
+  
+        if (currentGame.players.length >= currentGame.totalPlayers) {
+          throw "La sala está llena";
+        }
+  
+        const playerIndex = currentGame.players.length;
+        const angleStep = (2 * Math.PI) / currentGame.totalPlayers;
+        const angle = playerIndex * angleStep;
+        
+        let rotationAngle = (angle + Math.PI) % (2 * Math.PI);
+        let rotationAngleDegrees = (rotationAngle * 180) / Math.PI;
+  
+        const newPlayer = {
+          id: playerId,
+          x: ARENA_RADIUS * Math.cos(angle) + 200,
+          y: ARENA_RADIUS * Math.sin(angle) + 200,
+          angle: rotationAngleDegrees,
+          color: COLORS[currentGame.players.length],
+          hasDynamite: false, // currentGame.players.length === 0
+          isDead: false,
+          wallet: account?.address
         };
-        await addDoc(gameRoomsCollection, gameData);
-      }
+  
+        const updatedPlayers = [...currentGame.players, newPlayer];
+        const updatedPlayersWallets = [...(currentGame.playersWallets || []), account?.address];
+  
+        transaction.update(gameRef, { 
+          players: updatedPlayers,
+          dynamiteHolder: currentGame.players.length === 0 ? playerId : currentGame.dynamiteHolder,
+          playersWallets: updatedPlayersWallets
+        });
+  
+        // Actualizamos la tabla de jugadores
+        const playerDocRef = doc(db, 'players', playerId);
+        transaction.update(playerDocRef, { actualRoom: currentRoom });
+      });
+  
+      console.log("Jugador unido exitosamente");
     } catch (error) {
-      console.error("Error joining game:", error);
+      console.error("Error al unirse al juego:", error);
+      setNotifyCurrentRoom(null);
+      setIsSpectator(false);
+      // Aquí puedes manejar los errores específicos, como "La sala está llena" o "La sala de juego no existe"
     }
-  };  
-
-
+  };
+  
   const createPlayerObject = (player: Player): Promise<fabric.Object> => {
     return new Promise((resolve) => {
       let personaje = player.hasDynamite? `/players/personaje-${player.color}-tnt.svg`:`/players/personaje-${player.color}.svg`
@@ -411,13 +511,28 @@ const PLAYER_RADIUS = 16;
   };  
 
   const updateCanvas = async (fabricCanvas: fabric.Canvas, newGameState: GameState) => {
+    
+    fabricCanvas.getObjects().forEach((obj, index, objects) => {
+      if (obj.data?.playerId) {
+        const duplicateIndex = objects.findIndex((otherObj, otherIndex) => 
+          otherIndex > index && otherObj.data?.playerId === obj.data.playerId
+        );
+        if (duplicateIndex !== -1) {
+          fabricCanvas.remove(objects[duplicateIndex]);
+        }
+        if (!newGameState.players.some(p => p.id === obj.data.playerId)) {
+          fabricCanvas.remove(obj);
+        }
+      }
+    });
+
     for (const player of newGameState.players) {
 
       let playerObject = fabricCanvas.getObjects().find(obj => obj.data?.playerId === player.id);
       
       if (playerObject) {
         if (player.isDead) {
-          fabricCanvas.remove(playerObject);
+          fabricCanvas.remove(playerObject);  
         } else {
           let personaje = player.hasDynamite ? `/players/personaje-${player.color}-tnt.svg` : `/players/personaje-${player.color}.svg`;
           if (playerObject.data.hasDynamite !== player.hasDynamite) {
@@ -428,14 +543,10 @@ const PLAYER_RADIUS = 16;
         playerObject = await createPlayerObject(player);
         fabricCanvas.add(playerObject);
       }
+      fabricCanvas.requestRenderAll();
     }
 
-    //  console.log(.getObjects())
-    // fabricCanvas.getObjects().forEach(obj => {
-    //   if (obj.data?.playerId && !newGameState.players.some(p => p.id === obj.data.playerId)) {
-    //     fabricCanvas.remove(obj);
-    //   }
-    // });
+    
     fabricCanvas.renderAll();
   };
  
@@ -514,13 +625,13 @@ const PLAYER_RADIUS = 16;
   };
 
   const startDynamitePassing = () => {
-    
     const passDynamite = async () => {
-      
-      if (!gameStateRef.current || gameStateRef.current.winner!="") return;
+      const gameRef = doc(db, 'games_ably', currentRoom!);
+      let gameRoom = await (await getDoc(gameRef)).data() as GameState
+      if (!gameRoom || gameRoom.winner!="") return;
 
-      const alivePlayers = gameStateRef.current.players.filter((p:Player) => (!p.isDead));
-      const someHasDinamite = gameStateRef.current.players.filter((p:Player) => (!p.isDead && p.hasDynamite));
+      const alivePlayers = gameRoom.players.filter((p:Player) => (!p.isDead));
+      const someHasDinamite = gameRoom.players.filter((p:Player) => (!p.isDead && p.hasDynamite));
       if (alivePlayers.length > 1 && someHasDinamite.length<=0) {
         const randomPlayer = alivePlayers[Math.floor(Math.random() * alivePlayers.length)];
         // await updateDynamiteHolder(randomPlayer.id);
@@ -528,17 +639,22 @@ const PLAYER_RADIUS = 16;
         await updateDoc(gameRef, {
           dynamiteHolder: randomPlayer.id,
           explosionTime: Date.now() + getRandomExplosionTime(),
-          players: gameStateRef.current?.players.map((p:any) => ({
+          players: gameRoom?.players.map((p:any) => ({
             ...p,
             hasDynamite: p.id === randomPlayer.id
           })) || []
         });
       }
-      if(gameStateRef.current.winner) return
-      setTimeout(passDynamite, getRandomPassTime());
+
+      if (gameRoom && gameRoom.winner !== "") {
+        if (startDynamitePassingTimeoutRef.current) clearTimeout(startDynamitePassingTimeoutRef.current); 
+        return;
+      }
+
+      startDynamitePassingTimeoutRef.current = setTimeout(passDynamite, getRandomPassTime());
     };
 
-    setTimeout(passDynamite, getRandomPassTime());
+    startDynamitePassingTimeoutRef.current = setTimeout(passDynamite, getRandomPassTime());
   };
 
   const getRandomPassTime = () => {
@@ -551,50 +667,60 @@ const PLAYER_RADIUS = 16;
 
   const verifyExplotion = ()=>{
     const handleExplosion = async () => {
-      // console.log(gameStateRef.current)
-      if (gameStateRef.current && (gameStateRef.current.explosionTime && Date.now() >= gameStateRef.current.explosionTime)) {
+      //  console.log(gameStateRef.current)
+      const gameRef = doc(db, 'games_ably', currentRoom!);
+      let gameRoom = await (await getDoc(gameRef)).data() as GameState
+      if (!gameRoom || gameRoom.winner!="") return;
+      
+      if (gameRoom && (gameRoom.explosionTime && Date.now() >= gameRoom.explosionTime)) {
         
         const gameRef = doc(db, 'games_ably', currentRoom!);
 
-        if (!gameStateRef.current.dynamiteHolder) return;
+        if (!gameRoom.dynamiteHolder) return;
     
-        const updatedPlayers = gameStateRef.current.players.map((player:Player) => ({
+        const updatedPlayers = gameRoom.players.map((player:Player) => ({
           ...player,
-          isDead: player.id === gameStateRef.current.dynamiteHolder ? true : player.isDead,
+          isDead: player.id === gameRoom.dynamiteHolder ? true : player.isDead,
           hasDynamite: false
         }));
     
         const alivePlayers = updatedPlayers.filter((p:any) => !p.isDead);
     
         let winnerId = null;
-        let newDynamiteHolder = "";
-        let newExplosionTime = 0;
     
         if (alivePlayers.length === 1) {
           winnerId = alivePlayers[0].id;
-        } else if (alivePlayers.length > 1) {
-          newDynamiteHolder = alivePlayers[Math.floor(Math.random() * alivePlayers.length)].id;
-          newExplosionTime = Date.now() + getRandomExplosionTime();
+        } 
+
+        // console.log(updatedPlayers)
+        if(winnerId){
+          const playerRef = doc(db, 'players', winnerId);
+          const gameDoc = await getDoc(playerRef);
+          const player = gameDoc.data()
+      
+          await updateDoc(gameRef, {
+            players: updatedPlayers,
+            winner: winnerId,
+            winnerWallet:player?.wallet
+          });
+        }else{
+          await updateDoc(gameRef, {
+            players: updatedPlayers,
+          });
         }
-        if(!winnerId) return
     
-        const playerRef = doc(db, 'players', winnerId);
-        const gameDoc = await getDoc(playerRef);
-        const player = gameDoc.data()
-    
-        await updateDoc(gameRef, {
-          players: updatedPlayers,
-          dynamiteHolder: newDynamiteHolder,
-          explosionTime: newExplosionTime,
-          winner: winnerId,
-          winnerWallet:player?.wallet
-        });
       }
-      if(gameStateRef.current.winner) return
-      setTimeout(handleExplosion, 1000);
+      gameRoom = await (await getDoc(gameRef)).data() as GameState;
+
+      if (gameRoom && gameRoom.winner !== "") {
+        if (explosionTimeoutRef.current) clearTimeout(explosionTimeoutRef.current); 
+        return;
+      }
+
+      explosionTimeoutRef.current = setTimeout(handleExplosion, 1000);
     };
   
-    setTimeout(handleExplosion, 1000);
+    explosionTimeoutRef.current = setTimeout(handleExplosion, 1000);
   };
 
   
@@ -618,29 +744,12 @@ const PLAYER_RADIUS = 16;
         tabIndex={0}
       />
       <div>
-        {showWinnerAlert && winnerInfo && (
-          <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-            <div className="bg-white p-8 rounded-lg shadow-lg">
-              <h2 className="text-2xl font-bold mb-4">We have a winner!</h2>
-              {/* <p>Player ID: {winnerInfo.id}</p> */}
-              <p>Color: {winnerInfo.color}</p>
-              <p className='text-[10px]'>Player ID: {winnerInfo.wallet}</p>
-              <button 
-                className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-                onClick={() => setShowWinnerAlert(false)}
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-      <div>
         {gameState && <WonOrLostModal
           isOpen={isModalOpen}
           amount= {wonAmount}
           isBet = {gameState!.isBettingRoom}
           isWon={isWon}
+          isPlayEnd = {isPlayEnd}
           status_game = {statusContractGame}
           room_code_contract = {gameState!.roomIdContract}
           onClose={() => setModalOpen(false)}

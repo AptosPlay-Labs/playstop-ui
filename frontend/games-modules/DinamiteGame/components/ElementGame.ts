@@ -52,7 +52,7 @@ export const createRock = (x: number, y: number) => {
 };  
 
 
-export function changePlayerSVG(fabricCanvas: fabric.Canvas, playerId: string, newSVGUrl: string) {
+export function  changePlayerSVG(fabricCanvas: fabric.Canvas, playerId: string, newSVGUrl: string) {
   // Encuentra el objeto del jugador
   const playerObject = fabricCanvas.getObjects().find(obj => obj.data?.playerId === playerId);
 
@@ -84,6 +84,7 @@ export function changePlayerSVG(fabricCanvas: fabric.Canvas, playerId: string, n
 
       // Reemplaza el grupo antiguo con el nuevo
       fabricCanvas.remove(playerObject);
+      fabricCanvas.requestRenderAll();
       fabricCanvas.add(newGroup);
       fabricCanvas.requestRenderAll();
 

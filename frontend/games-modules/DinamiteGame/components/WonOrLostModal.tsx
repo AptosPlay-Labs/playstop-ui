@@ -17,12 +17,13 @@ interface Withdraw {
     amount: number;
     isBet: boolean;
     isWon: boolean;
+    isPlayEnd:boolean;
     status_game: string;
     room_code_contract: number;
     onClose: () => void;
 }
 
-const WonOrLostModal: React.FC<Withdraw> = ({ isOpen, amount, isBet, isWon, status_game, room_code_contract, onClose }) => {
+const WonOrLostModal: React.FC<Withdraw> = ({ isOpen, amount, isBet, isWon,isPlayEnd, status_game, room_code_contract, onClose }) => {
     const [amountWon, setAmountWon] = useState(0);
     const [amountFee, setAmountFee] = useState(0);
     const { account, signAndSubmitTransaction } = useWallet();
@@ -71,7 +72,7 @@ const WonOrLostModal: React.FC<Withdraw> = ({ isOpen, amount, isBet, isWon, stat
             let roomId = playerSnapshot.docs[0].data().actualRoom
             const playerDocRef = doc(db, 'players', playerSnapshot.docs[0].id);
             await updateDoc(playerDocRef, { actualRoom: "" });
-            if(!isBet) {await endGame(roomId)}
+            if(!isBet && isPlayEnd) {await endGame(roomId)}
             return roomId
         }catch (error) {
             return null
