@@ -62,7 +62,7 @@ const PLAYER_RADIUS = 16;
   const [statusContractGame, setStatusContractGame] = useState('');
   const [isWon, setIsWon] = useState(false);
   const [wonAmount, setWonAmount] = useState(0);
-
+  const playGameAfterStart = useRef(false);
   //const { selectedGame, setNotifyCurrentRoom, setIsSpectator } = notificateStore();
 
   const { account } = useWallet();
@@ -71,7 +71,7 @@ const PLAYER_RADIUS = 16;
   useEffect(() => {
     gameStateRef.current = gameState;
     if (gameState?.winner) {
-      console.log(gameState)
+      playGameAfterStart.current=false
       let amount = parseFloat(gameState?.betAmount)
       amount = amount * gameState.totalPlayers
       setWonAmount(amount)
@@ -84,10 +84,7 @@ const PLAYER_RADIUS = 16;
       setModalOpen(true)
     }
 
-    if (gameState && (gameState.explosionTime && Date.now() >= gameState.explosionTime) && currentRoom) {
-      const gameRef = doc(db, 'games_ably', currentRoom);
-      handleExplosion(gameState, gameRef);
-    }
+    
     // fabricGif(
     //   "/images/flame.gif",
     //   100,
@@ -130,7 +127,10 @@ const PLAYER_RADIUS = 16;
 
   const handleKeyDown = useCallback(async (e: KeyboardEvent) => {
     if (!playerId || !canvas || !currentRoom) return;
-    // if(!gameState?.isStart) return
+    // console.log(playGameAfterStart.current)
+    
+    if(!playGameAfterStart.current) return
+    
     const player = gameState?.players.find((p:any) => p.id === playerId);
     if (!player) return;
     
@@ -208,10 +208,10 @@ const PLAYER_RADIUS = 16;
 
       //Deuda tecnica, se debe actualizar por ably y no por firebase
       if (player.hasDynamite) {
-        console.log("tengo la dinamita")
+        // console.log("tengo la dinamita")
         updateDynamiteHolder(collidedPlayer.id);
       } else if (collidedPlayer.hasDynamite) {
-        console.log("otro tiene la dinamita")
+        // console.log("otro tiene la dinamita")
         updateDynamiteHolder(playerId!);
       }
       
@@ -236,10 +236,9 @@ const PLAYER_RADIUS = 16;
         window.removeEventListener('keydown', handleKeyDown);
       };
     }
-  }, [canvas, playerId, handleKeyDown]);
+  }, [canvas, playerId, handleKeyDown, playGameAfterStart]);
 
   const initializeGame = async () => {
-    console.log("doble initialice")
     //para que no se instancie muchos veces
     if(gifref.current==1) return
     gifref.current+=1
@@ -277,7 +276,6 @@ const PLAYER_RADIUS = 16;
     
     onSnapshot(gameRef, async (snapshot) => {
       const newGameState = snapshot.data() as GameState;
-      console.log("firebase doble")
       if (newGameState) {
 
         if (gameStateRef.current) {
@@ -301,14 +299,12 @@ const PLAYER_RADIUS = 16;
           setShowCounter(true);
         }
       
-        console.log(newGameState)
         setGameState(newGameState);
         updateCanvas(fabricCanvas, newGameState);
       }
     });
 
     const gameData = gamDoc.data()
-    console.log(gameData?.channel)
     const gameChannel = ablyInstance.channels.get(gameData?.channel);
     setChannel(gameChannel);
 
@@ -440,11 +436,11 @@ const PLAYER_RADIUS = 16;
     //     fabricCanvas.remove(obj);
     //   }
     // });
-
-    fabricCanvas.requestRenderAll();
+    fabricCanvas.renderAll();
   };
  
-  const updatePlayerPosition = (fabricCanvas: fabric.Canvas, id: string, x: number, y: number, angle: number, gameState:GameState|undefined, setGameState: (state: GameState) => void) => {
+  const updatePlayerPosition = (fabricCanvas: fabric.Canvas, id: string, x: number, y: number, angle: number, gameState:GameState, setGameState: (state: GameState) => void) => {
+    if(!gameStateRef.current.winner && gameStateRef.current.winner!="") return
     const playerObject = fabricCanvas.getObjects().find(obj => obj.data?.playerId === id) as fabric.Group;
     if (playerObject) {
 
@@ -458,22 +454,27 @@ const PLAYER_RADIUS = 16;
       // console.log(gameState.players)
 
       let objects = fabricCanvas.getObjects().filter(obj=>obj.data?.playerId)
-      let updateGameState:any = {}
-      updateGameState.dynamiteHolder = gameState?.dynamiteHolder
-      updateGameState.explosionTime = gameState?.explosionTime
-      updateGameState.winner = gameState?.winner
-      updateGameState.players = []
+      // let updateGameState:any = {}
+      // updateGameState.dynamiteHolder = gameState?.dynamiteHolder
+      // updateGameState.explosionTime = gameState?.explosionTime
+      // updateGameState.winner = gameState?.winner
+      let updatedPlayers:Player[] = []
       objects.forEach(obj=>{
         let point = obj.getCenterPoint()
         let player = gameState?.players.find(p=>p.id==obj.data?.playerId)
         player!.x = point.x
         player!.y = point.y
         player!.angle = obj.angle!
-        updateGameState.players.push(player)        
+        updatedPlayers.push(player!)        
       })
       //console.log(gameStateRef.current)
       // gameStateRef.current = updateGameState
-      setGameState(updateGameState);
+      // setGameState(updateGameState);
+      setGameState({
+        ...gameState,
+        players: updatedPlayers
+      });
+  
     }
   };
 
@@ -522,7 +523,6 @@ const PLAYER_RADIUS = 16;
       const someHasDinamite = gameStateRef.current.players.filter((p:Player) => (!p.isDead && p.hasDynamite));
       if (alivePlayers.length > 1 && someHasDinamite.length<=0) {
         const randomPlayer = alivePlayers[Math.floor(Math.random() * alivePlayers.length)];
-        console.log(randomPlayer.id)
         // await updateDynamiteHolder(randomPlayer.id);
         const gameRef = doc(db, 'games_ably', currentRoom!);
         await updateDoc(gameRef, {
@@ -534,7 +534,7 @@ const PLAYER_RADIUS = 16;
           })) || []
         });
       }
-
+      if(gameStateRef.current.winner) return
       setTimeout(passDynamite, getRandomPassTime());
     };
 
@@ -549,45 +549,60 @@ const PLAYER_RADIUS = 16;
     return Math.floor(Math.random() * (14000 - 8000 + 1) + 8000); // Random time between 5 to 10 seconds
   };
 
-  const handleExplosion = async (currentState: GameState, gameRef: any) => {
-    if (!currentState.dynamiteHolder) return;
+  const verifyExplotion = ()=>{
+    const handleExplosion = async () => {
+      // console.log(gameStateRef.current)
+      if (gameStateRef.current && (gameStateRef.current.explosionTime && Date.now() >= gameStateRef.current.explosionTime)) {
+        
+        const gameRef = doc(db, 'games_ably', currentRoom!);
 
-    const updatedPlayers = currentState.players.map(player => ({
-      ...player,
-      isDead: player.id === currentState.dynamiteHolder ? true : player.isDead,
-      hasDynamite: false
-    }));
-
-    const alivePlayers = updatedPlayers.filter(p => !p.isDead);
-
-    let winnerId = null;
-    let newDynamiteHolder = "";
-    let newExplosionTime = 0;
-
-    if (alivePlayers.length === 1) {
-      winnerId = alivePlayers[0].id;
-    } else if (alivePlayers.length > 1) {
-      newDynamiteHolder = alivePlayers[Math.floor(Math.random() * alivePlayers.length)].id;
-      newExplosionTime = Date.now() + getRandomExplosionTime();
-    }
-    if(!winnerId) return
-
-    const playerRef = doc(db, 'players', winnerId);
-    const gameDoc = await getDoc(playerRef);
-    const player = gameDoc.data()
-
-    await updateDoc(gameRef, {
-      players: updatedPlayers,
-      dynamiteHolder: newDynamiteHolder,
-      explosionTime: newExplosionTime,
-      winner: winnerId,
-      winnerWallet:player?.wallet
-    });
+        if (!gameStateRef.current.dynamiteHolder) return;
+    
+        const updatedPlayers = gameStateRef.current.players.map((player:Player) => ({
+          ...player,
+          isDead: player.id === gameStateRef.current.dynamiteHolder ? true : player.isDead,
+          hasDynamite: false
+        }));
+    
+        const alivePlayers = updatedPlayers.filter((p:any) => !p.isDead);
+    
+        let winnerId = null;
+        let newDynamiteHolder = "";
+        let newExplosionTime = 0;
+    
+        if (alivePlayers.length === 1) {
+          winnerId = alivePlayers[0].id;
+        } else if (alivePlayers.length > 1) {
+          newDynamiteHolder = alivePlayers[Math.floor(Math.random() * alivePlayers.length)].id;
+          newExplosionTime = Date.now() + getRandomExplosionTime();
+        }
+        if(!winnerId) return
+    
+        const playerRef = doc(db, 'players', winnerId);
+        const gameDoc = await getDoc(playerRef);
+        const player = gameDoc.data()
+    
+        await updateDoc(gameRef, {
+          players: updatedPlayers,
+          dynamiteHolder: newDynamiteHolder,
+          explosionTime: newExplosionTime,
+          winner: winnerId,
+          winnerWallet:player?.wallet
+        });
+      }
+      if(gameStateRef.current.winner) return
+      setTimeout(handleExplosion, 1000);
+    };
+  
+    setTimeout(handleExplosion, 1000);
   };
 
+  
   const handleCountdownEnd = useCallback(() => {
     setShowCounter(false);
+    playGameAfterStart.current=true
     startDynamitePassing();
+    verifyExplotion()
   }, []);
 
   return (
