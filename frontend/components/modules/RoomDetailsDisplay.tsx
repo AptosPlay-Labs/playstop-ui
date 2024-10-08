@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useGameStore } from '../../store/gameStore';
 
 export function RoomDetailsDisplay() {
-  const { game, grid, currentPlayer, players } = useGameStore();
+  const { game, currentPlayer, players } = useGameStore();
   const [, setUpdateTrigger] = useState(0);
 
   useEffect(() => {

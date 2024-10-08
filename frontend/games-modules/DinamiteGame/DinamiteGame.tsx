@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { fabric } from 'fabric';
-import { addDoc, collection, doc, getDocs, query, onSnapshot, updateDoc, where, getDoc, runTransaction } from 'firebase/firestore';
+import { collection, doc, getDocs, query, onSnapshot, updateDoc, where, getDoc, runTransaction } from 'firebase/firestore';
 import { db } from '@/config/firebase';
 import { useWallet } from '@aptos-labs/wallet-adapter-react';
 import * as Ably from 'ably';

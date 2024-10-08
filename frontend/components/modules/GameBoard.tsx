@@ -4,7 +4,6 @@ import { doc, getDoc, updateDoc, Timestamp, query, collection, where, getDocs } 
 import { db } from '../../config/firebase';
 
 import { RoomDetailsDisplay } from './RoomDetailsDisplay'
-import { BettingGames, NonBettingGames, GameRoom } from '../../core/FirestoreGameRoom';
 import { useTheme } from '../ThemeProvider';
 import { notificateStore } from "@/store/notificateStore";
 import { LoadingScreen } from "../common/LoadingScreen";
@@ -18,8 +17,7 @@ export function GameBoard() {
   const { account } = useWallet();
   const [countdown, setCountdown] = useState<number | null>(null);
   const { game, grid, currentPlayer, initializeGame, addAtom, players } = useGameStore();
-  const [roomsNoBet, setRoomsNoBet] = useState<GameRoom[]>([]);
-  const [roomsBet, setRoomsBet] = useState<GameRoom[]>([]);
+  
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const [gameStarted, setGameStarted] = useState(false);
   const [waitingForOpponent, setWaitingForOpponent] = useState(false);
@@ -64,19 +62,6 @@ export function GameBoard() {
       if (timer) clearTimeout(timer);
     };
   }, [countdown, game]);
-
-
-  useEffect(() => {
-    const nonBettingGames = new NonBettingGames();
-    nonBettingGames.onSnapshot((updatedRooms) => {
-      setRoomsNoBet(updatedRooms);
-    });
-
-    const bettingGames = new BettingGames();
-    bettingGames.onSnapshot((updatedRooms) => {
-      setRoomsBet(updatedRooms);
-    });
-  }, [])
 
   useEffect(() => {
     setOnlyValidation(0)
@@ -330,11 +315,11 @@ export function GameBoard() {
     marginRight: '10px',
   };
 
-  const disabledButtonStyle = {
+  /* const disabledButtonStyle = {
     ...buttonStyle,
     opacity: 0.5,
     cursor: 'not-allowed',
-  };
+  }; */
 
   const progressStyle = {
     width: '100%',
