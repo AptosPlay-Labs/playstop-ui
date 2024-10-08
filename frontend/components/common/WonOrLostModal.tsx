@@ -73,7 +73,7 @@ const WonOrLostModal: React.FC<Withdraw> = ({ isOpen, amount, isBet, isWon, stat
             let roomId = playerSnapshot.docs[0].data().actualRoom
             const playerDocRef = doc(db, 'players', playerSnapshot.docs[0].id);
             await updateDoc(playerDocRef, { actualRoom: "" });
-
+            if(!isBet) {await endGame(roomId)}
             return roomId
         } catch (error) {
             return null

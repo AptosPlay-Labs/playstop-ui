@@ -181,6 +181,7 @@ const CreateRoomModal: React.FC<CreateRoom> = ({ isOpen,isbet, onClose }) => {
         try {
             const committedTransaction = await signAndSubmitTransaction(
                 ChainReactionGame.createRoom(amount, players)
+                
             );
             const executedTransaction = await aptosClient().waitForTransaction({
               transactionHash: committedTransaction.hash 
