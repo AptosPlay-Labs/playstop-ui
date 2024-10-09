@@ -171,7 +171,7 @@ export function GameBoard() {
         if (isCreator && isOnlyPlayer && game.status === "waiting") {
           // El creador sale cuando aún no se han unido otros jugadores
           await updateDoc(game.gameDoc, {
-            status: "leave",
+            status: "completed",
             players: [],
             playersWallets: []
           });
