@@ -59,25 +59,22 @@ class FirestoreGame extends ChainReactionGame {
       currentPlayerWallet: this.currentPlayerWallet,
       turnEndTime: this.turnEndTime ? Timestamp.fromMillis(this.turnEndTime) : null,
       players: this.players,
-      status: this.status // Actualizar status en Firestore
+      status: this.status
     });
   }
 
   addAtom(row: number, col: number) {
-    //console.log(" add atom")
     super.addAtom(row, col);
     this.checkWinner();
     this.sync();
   }
 
   startGame() {
-    //console.log(" status live")
     this.status = 'live';
     this.sync();
   }
 
   completeGame() {
-    //console.log(" status completed")
     this.status = 'completed';
     this.sync();
   }

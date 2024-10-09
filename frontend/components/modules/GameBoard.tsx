@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useGameStore } from '../../store/gameStore';
 import { doc, getDoc, updateDoc, Timestamp, query, collection, where, getDocs } from 'firebase/firestore';
 import { db } from '../../config/firebase';
@@ -32,22 +32,7 @@ export function GameBoard() {
   const [roomCodeContract, setRoomCodeContract] = useState(0);
   const [isBettingRoom, setIsBettingRoom] = useState(false);
 
-  // Acceder a los jugadores
-  const gamePlayers = game?.players;
-  console.log(gamePlayers);
-
   const winner = players.find(player => player.winner == true);
-
-  // useEffect(() => {
-  //   // if (game && players.length === 2 && players.every(player => player.play === true) && game.status !== "live" && !winner) {
-  //   //   setCountdown(10); // Inicia el contador en 10 segundos
-  //   // }
-  //   if(game?.players.length == game?.totalPlayers && startCountRef.current<1){
-  //     startCountRef.current+=1
-  //     // await updateDoc(snapshot.ref, {isStart:!newGameState.isStart, status:"live"})
-  //     setShowCounter(true);
-  //   }
-  // }, [game, players, winner]);
 
 
   useEffect(() => {
@@ -61,31 +46,18 @@ export function GameBoard() {
         const docSnap = await getDoc(gameDoc);
         if (docSnap.exists()) {
           const data = docSnap.data();
-          //const winner = data.players.find((vl:any) => vl.winner===true);
           initializeGame(8, 8, currentRoom, data.players);
-          // if (data.status === 'waiting' && !winner) {
-          //   initializeGame(8, 8, currentRoom, data.players);
-          // } 
-          // if (data.status === 'live' && !winner) {
-          //   initializeGame(8, 8, currentRoom, data.players);
-          // }
-          // if (data.status === 'completed' && winner) {
-          //   initializeGame(8, 8, currentRoom, data.players);
-          // }
-
-          // else {
-          //   console.log("El juego ha finalizado.");
-          // }
         }
       };
       fetchGame();
     }
   }, [currentRoom, initializeGame, account?.address, selectedGame]);
 
-  useEffect(() => {
+  useEffect(() => { 
     const timer = setInterval(() => {
       const winner = game?.players.find(player => player.winner == true);
-      if (!winner && game && game.turnEndTime) {
+      console.log(game?.players.length)
+      if (!winner && game && game.turnEndTime &&  game.players.length >= 2) {
         const timeRemaining = game.turnEndTime - Timestamp.now().toMillis();
         setTimeLeft(timeRemaining > 0 ? timeRemaining : 0);
         if (timeRemaining <= 0) {
@@ -96,7 +68,7 @@ export function GameBoard() {
     }, 1000);
     return () => clearInterval(timer);
 
-  }, [game, account?.address, selectedGame]);
+  }, [game, players, account?.address]);
 
   useEffect(() => {
     if (game?.status == 'live' && winner) {
@@ -113,7 +85,6 @@ export function GameBoard() {
   }, [winner, account?.address, selectedGame]);
 
   async function updatPLayer(game: FirestoreGame, isExit: Boolean) {
-
 
     if (onlyValidation > 0) return
     const winner = game?.players.find(player => player.winner == true);
@@ -154,63 +125,23 @@ export function GameBoard() {
   }
 
   useEffect(() => {
-    if(game?.players.length == game?.totalPlayers && startCountRef.current<1){
-      startCountRef.current+=1
-      // await updateDoc(snapshot.ref, {isStart:!newGameState.isStart, status:"live"})
-      setShowCounter(true);
-    }
-
+    
     const winner = game?.players.find(player => player.winner == true);
-    if (game && players.length >= 2 && players.every(player => player.play === true) && game.status && game.status !== "live" && !game?.turnEndTime && !winner) {
-      game.turnEndTime = Timestamp.now().toMillis() + 30000; // 30 segundos en el futuro
-      //console.log("ingresa en comando start to live")
-      game.startGame(); // Cambiar el estado a "live"
-      setGameStarted(true);
-    }
+    if (game && game.players.length >= 2 && !game?.turnEndTime && !winner && startCountRef.current<1) {
 
+      startCountRef.current+=1
+      game.turnEndTime = Timestamp.now().toMillis() + 30000; 
 
-    // if (winner && game && game.status && game.status !== "completed") {
-    //     updatPLayer(game, false)
-    //     game.completeGame(); // Cambiar el estado a "completed"
-    // }
-
-    if (game && players.length >= 2 && players.every(player => player.play === true)) {
+      setShowCounter(true);
       setWaitingForOpponent(false);
       setGameStarted(true);
-    } else {
+    }else{
       setWaitingForOpponent(true);
     }
 
-    if (game) {
-      let playerAddress = game.players.find(vl => vl.wallet === account?.address);
-      if (playerAddress && playerAddress.play && !winner) {
-        setGameStarted(true);
-      }
-    }
   }, [game, players, account?.address]);
 
-  const startGame = async () => {
-    if (game && !gameStarted && account?.address) {
-      const playerIndex = game.players.findIndex(player => player.wallet === account?.address);
-      if (playerIndex !== -1) {
-        game.players[playerIndex].play = true;
-        await updateDoc(game.gameDoc, { players: game.players });
-        console.log('Player is ready to play');
-      }
-    }
-  };
-
-  // Auto-iniciar el juego cuando todos los jugadores estén listos
-  useEffect(() => {
-    if (game && game.players?.length >= 2 && game.players.every(player => player.play === true)) {
-      setGameStarted(true);
-      console.log('Game started automatically');
-    } else {
-      // Llama a startGame para actualizar el estado del jugador cuando no todos están listos
-      startGame(); // Aquí llamamos a startGame
-    }
-  }, [game, game?.players]); // Asegúrate de incluir 'game' y 'game?.players' en las dependencias
-
+  
   const handleClick = (row: number, col: number) => {
     const winner = game?.players.find(player => player.winner == true);
     if (game && !winner && account?.address && currentPlayer?.wallet === account?.address && players.every(player => player.play === true) && game.status && game.status === "live") {
@@ -308,25 +239,20 @@ export function GameBoard() {
     marginRight: '10px',
   };
 
-  /* const disabledButtonStyle = {
-    ...buttonStyle,
-    opacity: 0.5,
-    cursor: 'not-allowed',
-  }; */
-
   const progressStyle = {
     width: '100%',
     height: '20px',
   };
 
-  const handleCountdownEnd = useCallback(() => {
+  const handleCountdownEnd = ()=> {
     if (game) {
       game.turnEndTime = Timestamp.now().toMillis() + 30000;
       game.startGame();
+      
       setGameStarted(true);
       setShowCounter(false);
     }
-  }, []);
+  }
 
   return (
     <div>
@@ -342,15 +268,6 @@ export function GameBoard() {
       ) : (
         <div>
           <div className="grid grid-rows-3 grid-flow-col gap-4">
-            {/* <div className=" row-span-2 ...">
-              {countdown !== null && (
-                <div className="text-center py-4">
-                  <p className="text-2xl font-bold">
-                    La partida comenzará en: {countdown}
-                  </p>
-                </div>
-              )}
-            </div> */}
             <div className=" row-span-2 ...">
             <div className="game-data-display p-4 rounded-lg shadow-md">
               <ul className="space-y-2">
