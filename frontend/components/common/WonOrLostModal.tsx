@@ -46,7 +46,6 @@ const WonOrLostModal: React.FC<Withdraw> = ({ isOpen, amount, isBet, isWon, stat
         let roomId = await endRoom()
         if (roomId) {
             onClose()
-
             setNotifyCurrentRoom(null);
             setIsSpectator(false);
             setSelectedGame(null)
@@ -59,7 +58,6 @@ const WonOrLostModal: React.FC<Withdraw> = ({ isOpen, amount, isBet, isWon, stat
         let roomId = await endRoom()
         if (roomId) {
             onClose()
-
             setNotifyCurrentRoom(null);
             setIsSpectator(false);
         }
@@ -73,7 +71,7 @@ const WonOrLostModal: React.FC<Withdraw> = ({ isOpen, amount, isBet, isWon, stat
             let roomId = playerSnapshot.docs[0].data().actualRoom
             const playerDocRef = doc(db, 'players', playerSnapshot.docs[0].id);
             await updateDoc(playerDocRef, { actualRoom: "" });
-
+            if(!isBet) {await endGame(roomId)}
             return roomId
         } catch (error) {
             return null
@@ -84,11 +82,6 @@ const WonOrLostModal: React.FC<Withdraw> = ({ isOpen, amount, isBet, isWon, stat
         const gameDocRef = doc(db, 'games', id);
         await updateDoc(gameDocRef, { status: "completed" });
     }
-
-    /* async function endGameNoBet(id: string) {
-        const gameDocRef = doc(db, 'games', id);
-        await updateDoc(gameDocRef, { status: "completed" });
-    } */
 
     async function onClaimPrize() {
         setLoading(true)

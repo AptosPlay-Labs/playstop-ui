@@ -20,8 +20,8 @@ import { DinamiteGameFabric } from "./DinamiteGameFabric";
 // import DinamiteGameV2 from "./DinamiteGameV2";
 
 const games = [
-  { name: 'REACTIVE CHAIN', id:"reactive-chain", color: 'from-yellow-400 to-yellow-600', img:"./images/reactive-chain.png"},
   { name: 'DINAMITE', id:"dinamite", color: 'from-purple-400 to-purple-600', img:"./images/dinamite.png"},
+  { name: 'REACTIVE CHAIN', id:"reactive-chain", color: 'from-yellow-400 to-yellow-600', img:"./images/reactive-chain.png"},
   { name: 'MISSILE BATTLE', id:"missile-battle", color: 'from-green-400 to-green-600', img:"./images/missile-battle.svg"}, 
   { name: 'FATAL SIEGE', id:"missile-battle", color: 'from-red-400 to-red-600', img:"./images/fatal-siege.png"}
   // { name: 'STICKMAN RUN', color: 'from-blue-400 to-cyan-300', svg: <path d="M17.5,4.5C17.5,5.6 16.6,6.5 15.5,6.5C14.4,6.5 13.5,5.6 13.5,4.5C13.5,3.4 14.4,2.5 15.5,2.5C16.6,2.5 17.5,3.4 17.5,4.5M15,8V16H13V8H11L8,10V12H10L11,11V16H9V21H11V18H13V21H15V18H17V8H15Z" /> },

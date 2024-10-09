@@ -22,6 +22,7 @@ export class ChainReactionGame {
   roomIdContract: number;
   betAmount:any;
   players: Player[];
+  totalPlayers:number;
   currentPlayerWallet: string;
   turnEndTime: number | null = null;
   private isExploding: boolean;
@@ -34,6 +35,7 @@ export class ChainReactionGame {
     this.isExploding = false;
     this.isBettingRoom = false;
     this.roomIdContract = 0;
+    this.totalPlayers = 0;
     this.betAmount = '0.0';
     this.grid = 
     Array.from({ length: rows }, () =>

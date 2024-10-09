@@ -22,6 +22,7 @@ class FirestoreGame extends ChainReactionGame {
         this.isBettingRoom = data.isBettingRoom;
         this.betAmount = data.betAmount;
         this.roomIdContract = data.roomIdContract;
+        this.totalPlayers = data.totalPlayers;
         this.currentPlayerWallet = data.currentPlayerWallet;
         this.turnEndTime = data.turnEndTime ? data.turnEndTime.toMillis() : null;
         this.players = data.players;
@@ -37,6 +38,7 @@ class FirestoreGame extends ChainReactionGame {
           this.status = data.status;
           this.isBettingRoom = data.isBettingRoom;
           this.roomIdContract = data.roomIdContract;
+          this.totalPlayers = data.totalPlayers;
           this.betAmount = data.betAmount;
           let grid = Array.from({ length: rows }, () =>
             Array.from({ length: cols }, () => ({ player: null, count: 0 }))

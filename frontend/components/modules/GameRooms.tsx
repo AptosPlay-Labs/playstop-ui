@@ -224,7 +224,7 @@ export function GameRooms() {
       const newPlayer = {
         color: room.players.length === 0 ? 'red' : 'blue',
         moves: 0,
-        play: false,
+        play: true,
         wallet: account?.address,
         winner: false,
       };

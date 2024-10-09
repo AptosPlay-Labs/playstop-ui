@@ -1,9 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useGameStore } from '../../store/gameStore';
 import { doc, getDoc, updateDoc, Timestamp, query, collection, where, getDocs } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 
-import { RoomDetailsDisplay } from './RoomDetailsDisplay'
 import { useTheme } from '../ThemeProvider';
 import { notificateStore } from "@/store/notificateStore";
 import { LoadingScreen } from "../common/LoadingScreen";
@@ -11,13 +10,15 @@ import Grid from '../common/Grid';
 import { FirestoreGame } from '@/core/firebaseGame';
 import { useWallet } from "@aptos-labs/wallet-adapter-react";
 import WonOrLostModal from '../common/WonOrLostModal';
+import GameCounter from '@/games-modules/DinamiteGame/components/GameCounter';
 
 export function GameBoard() {
   const [onlyValidation, setOnlyValidation] = useState(0);
   const { account } = useWallet();
-  const [countdown, setCountdown] = useState<number | null>(null);
+  const startCountRef = useRef<any>(0);
   const { game, grid, currentPlayer, initializeGame, addAtom, players } = useGameStore();
-  
+  const [showCounter, setShowCounter] = useState(false);
+
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const [gameStarted, setGameStarted] = useState(false);
   const [waitingForOpponent, setWaitingForOpponent] = useState(false);
@@ -37,31 +38,17 @@ export function GameBoard() {
 
   const winner = players.find(player => player.winner == true);
 
-  useEffect(() => {
-    if (game && players.length === 2 && players.every(player => player.play === true) && game.status !== "live" && !winner) {
-      setCountdown(10); // Inicia el contador en 10 segundos
-    }
-  }, [game, players, winner]);
+  // useEffect(() => {
+  //   // if (game && players.length === 2 && players.every(player => player.play === true) && game.status !== "live" && !winner) {
+  //   //   setCountdown(10); // Inicia el contador en 10 segundos
+  //   // }
+  //   if(game?.players.length == game?.totalPlayers && startCountRef.current<1){
+  //     startCountRef.current+=1
+  //     // await updateDoc(snapshot.ref, {isStart:!newGameState.isStart, status:"live"})
+  //     setShowCounter(true);
+  //   }
+  // }, [game, players, winner]);
 
-  useEffect(() => {
-    let timer: NodeJS.Timeout;
-    if (countdown !== null && countdown > 0) {
-      timer = setTimeout(() => {
-        setCountdown(countdown - 1);
-      }, 1000);
-    } else if (countdown === 0) {
-      // Inicia el juego
-      if (game) {
-        game.turnEndTime = Timestamp.now().toMillis() + 30000;
-        game.startGame();
-        setGameStarted(true);
-        setCountdown(null);
-      }
-    }
-    return () => {
-      if (timer) clearTimeout(timer);
-    };
-  }, [countdown, game]);
 
   useEffect(() => {
     setOnlyValidation(0)
@@ -167,6 +154,12 @@ export function GameBoard() {
   }
 
   useEffect(() => {
+    if(game?.players.length == game?.totalPlayers && startCountRef.current<1){
+      startCountRef.current+=1
+      // await updateDoc(snapshot.ref, {isStart:!newGameState.isStart, status:"live"})
+      setShowCounter(true);
+    }
+
     const winner = game?.players.find(player => player.winner == true);
     if (game && players.length >= 2 && players.every(player => player.play === true) && game.status && game.status !== "live" && !game?.turnEndTime && !winner) {
       game.turnEndTime = Timestamp.now().toMillis() + 30000; // 30 segundos en el futuro
@@ -326,25 +319,30 @@ export function GameBoard() {
     height: '20px',
   };
 
+  const handleCountdownEnd = useCallback(() => {
+    if (game) {
+      game.turnEndTime = Timestamp.now().toMillis() + 30000;
+      game.startGame();
+      setGameStarted(true);
+      setShowCounter(false);
+    }
+  }, []);
+
   return (
     <div>
       {loading && <LoadingScreen />}
 
+      <div>
+        {showCounter && (
+          <GameCounter onCountdownEnd={handleCountdownEnd} />
+        )}
+      </div>
       {winner ? (
-        <p style={textStyle}>Ganador: {winner.color} [{formatAddress(winner.wallet)}]</p>
+        <p style={textStyle}>Winner: {winner.color} [{formatAddress(winner.wallet)}]</p>
       ) : (
         <div>
           <div className="grid grid-rows-3 grid-flow-col gap-4">
-            <div className=" row-span-2 ...">
-             {/*  <button
-              style={gameStarted ? disabledButtonStyle : buttonStyle}
-              onClick={startGame}
-              disabled={gameStarted}
-            >
-              Start Game
-            </button>
- */}
-
+            {/* <div className=" row-span-2 ...">
               {countdown !== null && (
                 <div className="text-center py-4">
                   <p className="text-2xl font-bold">
@@ -352,21 +350,42 @@ export function GameBoard() {
                   </p>
                 </div>
               )}
-            </div>
+            </div> */}
             <div className=" row-span-2 ...">
-              <RoomDetailsDisplay />
+            <div className="game-data-display p-4 rounded-lg shadow-md">
+              <ul className="space-y-2">
+                <li>
+                  <span className="font-semibold">Current Player:</span>
+                  <span className={`font-bold ${currentPlayer?.color === 'red' ? 'text-red-600' : 'text-blue-600'}`}>
+                    {currentPlayer?.color} [{formatAddress(currentPlayer?.wallet)}]
+                  </span>
+                </li>
+                <li>
+                  <span className="font-semibold">Players:</span> {players.length}
+                  <ul className="ml-4 mt-2 space-y-1">
+                    {players.map((player, index) => (
+                      <li key={index} className={`${player.color === 'red' ? 'text-red-600' : 'text-blue-600'}`}>
+                        {player.color} - {formatAddress(player.wallet)}
+                        {player.winner && <span className="ml-2 font-bold text-green-600">(Winner)</span>}
+                        {player.wallet === game?.currentPlayerWallet && <span className="ml-2 font-bold">(Current Turn)</span>}
+                      </li>
+                    ))}
+                  </ul>
+                </li>
+              </ul>
+            </div>
             </div>
           </div>
 
 
           {gameStarted && (
             <div>
-              {waitingForOpponent && <p style={textStyle}>Esperando que el otro jugador esté listo...</p>}
+              {waitingForOpponent && <p style={textStyle}>Waiting for another player to join</p>}
             </div>
           )}
-          <p style={textStyle}>Turno de: {currentPlayer?.color} [{formatAddress(currentPlayer?.wallet || '')}]</p>
+          <p style={textStyle}>Turn of: {currentPlayer?.color} [{formatAddress(currentPlayer?.wallet || '')}]</p>
           <div>
-            {timeLeft !== null && <p style={textStyle}>Tiempo restante: {Math.ceil(timeLeft / 1000)}s</p>}
+            {timeLeft !== null && <p style={textStyle}>Time remaining: {Math.ceil(timeLeft / 1000)}s</p>}
             <progress style={progressStyle} value={timeLeft ? (30000 - timeLeft) : 0} max="30000" />
           </div>
 
@@ -398,3 +417,4 @@ export function GameBoard() {
     </div>
   );
 }
+

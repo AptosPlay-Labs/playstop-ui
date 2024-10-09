@@ -226,7 +226,7 @@ const CreateRoomModal: React.FC<CreateRoom> = ({ isOpen,isbet, onClose }) => {
             {
               color: "red",
               moves: 0,
-              play: false,
+              play: true,
               wallet: account?.address,
               winner: false
             }
@@ -284,7 +284,7 @@ const CreateRoomModal: React.FC<CreateRoom> = ({ isOpen,isbet, onClose }) => {
                   {
                     color: "red",
                     moves: 0,
-                    play: false,
+                    play: true,
                     wallet: account?.address,
                     winner: false
                   }
