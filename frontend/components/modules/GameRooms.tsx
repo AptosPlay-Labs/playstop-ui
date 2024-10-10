@@ -215,6 +215,7 @@ export function GameRooms() {
           title: "Error",
           description: `error Join room in contract`,
         });
+        setIsSpectator(false);
         return
       }
     }
