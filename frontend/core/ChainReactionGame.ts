@@ -55,7 +55,7 @@ export class ChainReactionGame {
     if (!this.isExploding) {
       const currentIndex = this.players.findIndex(player => player.wallet === this.currentPlayerWallet);
       this.currentPlayerWallet = this.players[(currentIndex + 1) % this.players.length].wallet;
-      this.turnEndTime = Timestamp.now().toMillis() + 30000; // 30 segundos en el futuro
+      this.turnEndTime = Timestamp.now().toMillis() + 15000; // 30 segundos en el futuro
     }
   }
 

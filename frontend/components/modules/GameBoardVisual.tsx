@@ -10,7 +10,7 @@ import { useTheme } from '../ThemeProvider'; // Asumiendo que has creado este ho
 
 export function GameBoardVisual() {
   const { account } = useWallet();
-  const { game, grid, currentPlayer, initializeGame, players } = useGameStore();
+  const { grid, currentPlayer, initializeGame, players } = useGameStore();
   const { currentRoom, setNotifyCurrentRoom, setIsSpectator } = notificateStore();
   const [loading] = useState<boolean>(false);
   const { theme } = useTheme();
@@ -65,9 +65,10 @@ export function GameBoardVisual() {
       )}
       <Grid 
         grid={grid} 
-        isBet={game && game.isBettingRoom} 
+        // isBet={game && game.isBettingRoom} 
         handleClick={() => { /* Disable interaction */ }} 
-        primaryColor="blue" 
+        // primaryColor="blue" 
+        currentPlayer={currentPlayer}
       />
       <button style={buttonStyle} onClick={closeGame}>Close</button> 
     </div>

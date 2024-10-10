@@ -60,7 +60,7 @@ a {
   display: flex;
   flex-wrap: wrap;
   gap: 2px;
-  padding: 8px;
+  /* padding: 8px; */
 }
 
 .atom {

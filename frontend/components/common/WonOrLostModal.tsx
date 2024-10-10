@@ -132,7 +132,7 @@ const WonOrLostModal: React.FC<Withdraw> = ({ isOpen, amount, isBet, isWon, stat
     return (
         <>
             {loading && <LoadingScreen />}
-            <div className="fixed inset-0 bg-black bg-opacity-65 flex items-center justify-center">
+            <div className="fixed z-[10] inset-0 bg-black bg-opacity-65 flex items-center justify-center">
                 <div className="relative bg-purple-600 p-6 rounded-3xl border-b-8 shadow-lg w-80 border-purple-700">
                     <div className="basolute">
                         <Crown fill="currentColor" className="absolute -top-8 left-1/2 transform -translate-x-1/2 text-yellow-400 w-12 h-12" />
