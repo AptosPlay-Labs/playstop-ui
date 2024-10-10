@@ -78,6 +78,7 @@ export function GameBoard() {
     if (game?.status == 'live' && winner) {
       if (winner.wallet == account?.address) {
         let amount = parseFloat(game?.betAmount)
+        amount = amount * game?.totalPlayers
         //console.log(game?.isBettingRoom)
         let statusGame = `${winner.moves}winner`
         let roomCodeContract = game?.roomIdContract
