@@ -218,7 +218,7 @@ export function GameBoard() {
             await updateDoc(game.gameDoc, {
               status: "waiting"
             });
-            
+            setLoading(false);
             return
           }
         }
