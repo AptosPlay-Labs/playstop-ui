@@ -9,14 +9,12 @@
 // import { TransferAPT } from "@/components/TransferAPT";
 // import { MessageBoard } from "@/components/MessageBoard";
 import {Layout} from "@/components/common"
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { ReactiveChain } from './ReactiveChain';
 // import { useState } from "react";
 import { notificateStore } from "./store/notificateStore";
 // import DinamiteGame from "./DinamiteGame";
 import { DinamiteGameFabric } from "./DinamiteGameFabric";
-import { useState } from "react";
-import GifToPng from "./components/GifToPng";
 // import { DinamiteGame } from "./games-modules/DinamiteGame/DinamiteGame";
 // import DinamiteReactPixi from "./DinamiteReactPixi";
 // import DinamiteGameV2 from "./DinamiteGameV2";
