@@ -9,7 +9,7 @@ export function DinamiteGameFabric() {
 
     return (
         <div>
-            <div className="flex items-center ml-8 mt-4">
+            <div className="absolute flex items-center ml-8 mt-4">
               <motion.button 
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}

@@ -18,7 +18,21 @@ import { ChainReactionGame } from '@/entry-functions/ChainReactionGame';
 import CreateRoomModal from './components/CreateRoomModal';
 import { GameButton } from '../../components/ui/GameButton';
 import { toast } from '../../components/ui/use-toast';
+import { AnimatePresence, motion } from 'framer-motion';
+import GifToPng from '@/components/GifToPng';
 
+
+const characters = [
+  { id: 1, name: 'Bleach', image: './characters/bleach-skin.gif', color: 'from-red-500 to-orange-500' },
+  { id: 2, name: 'Robin', image: './characters/robin-skin.gif', color: 'from-blue-500 to-purple-500' },
+  { id: 3, name: 'sasuke', image: './characters/sasuke-skin.gif', color: 'from-green-500 to-teal-500' },
+  { id: 4, name: 'zoro', image: './characters/zoro-skin.gif', color: 'from-gray-500 to-gray-700' },
+  { id: 5, name: 'Bleach', image: './characters/bleach-skin.gif', color: 'from-red-500 to-orange-500' },
+  { id: 6, name: 'Robin', image: './characters/robin-skin.gif', color: 'from-blue-500 to-purple-500' },
+  { id: 7, name: 'sasuke', image: './characters/sasuke-skin.gif', color: 'from-green-500 to-teal-500' },
+  { id: 8, name: 'zoro', image: './characters/zoro-skin.gif', color: 'from-gray-500 to-gray-700' },
+  // Añade más personajes según sea necesario
+];
 
 export function GameRooms() {
   const [roomsNoBet, setRoomsNoBet] = useState<GameRoom[]>([]);
@@ -26,6 +40,8 @@ export function GameRooms() {
   const [topPlayers, setTopPlayers] = useState<Player[]>([]);
   const [myGames, setMyGames] = useState<any[]>([]); // Add state for MyGames
   const [currentRoom, setCurrentRoom] = useState<any>(null);
+  const [selectedCharacter, setSelectedCharacter] = useState(characters[0]);
+
   //const primaryColor = useColorModeValue("#000000", "#FFFFFF");
   //const { status, account?.address } = useChain(chainName);
   const { account, signAndSubmitTransaction } = useWallet();
@@ -256,6 +272,91 @@ export function GameRooms() {
   return (
     <div className="min-w-[650px]">
       {loading && <LoadingScreen />}
+      <div 
+          className="
+            w-full
+            rounded-2xl
+            cursor-pointer
+            inline-block
+            font-sans
+            text-base
+            font-bold
+            tracking-wider
+            leading-5
+            text-white
+            text-center
+            uppercase
+            p-4
+            transition-all
+            duration-200
+            ease-in-out
+            select-none
+            shadow-lg
+          "
+          style={{
+            transform: 'perspective(500px) rotateX(-8deg) rotateY(1deg) rotateZ(-1deg)',
+            boxShadow: '0 4px 8px rgba(255, 255, 255, 0), 0 4px 0 0 rgba(0, 0, 0, 0.2)',
+          }}>
+            <div className="flex h-[280px] border rounded-3xl border-green-500 text-white overflow-hidden">
+              <div className="w-2/5 flex items-center justify-center relative">
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={selectedCharacter.id}
+                    className={`absolute inset-0`}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 0.5 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                  />
+                </AnimatePresence>
+                <motion.img
+                  key={selectedCharacter.id}
+                  src={selectedCharacter.image}
+                  alt={selectedCharacter.name}
+                  className="w-48 h-48 object-contain z-10"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3 }}
+                />
+                <motion.h2
+                  key={`name-${selectedCharacter.id}`}
+                  className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-xl font-bold text-white text-shadow"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: 0.1 }}
+                >
+                  {selectedCharacter.name}
+                </motion.h2>
+              </div>
+
+              <div className="w-[3px] bg-gradient-to-b from-green-600 to-green-300 transform -skew-x-12 z-20" />
+
+              <div className="w-3/5 p-4 px-10 overflow-y-auto ">
+                <div className="grid grid-cols-4 gap-4">
+                  {characters.map((character) => (
+                    <motion.div
+                      key={character.id}
+                      className={`cursor-pointer p-1 rounded-lg ${
+                        selectedCharacter.id === character.id
+                          ? `bg-gradient-to-br ${character.color}`
+                          : 'opacity-[0.4]'
+                      } transition-colors duration-300`}
+                      whileHover={{ scale: 1.03 }}
+                      whileTap={{ scale: 0.97 }}
+                      onClick={() => setSelectedCharacter(character)}
+                    >
+                      <GifToPng
+                        src={character.image}
+                        alt={character.name}
+                        className="m-auto h-20 object-cover rounded-md"
+                      />
+                      <p className="mt-1 text-center text-xs font-semibold">{character.name}</p>
+                    </motion.div>
+                  ))}
+              </div>
+          </div>
+        </div>
+      </div>
       <Tabs className="text-center">
         <TabList>
           <Tab>Training Mode</Tab>

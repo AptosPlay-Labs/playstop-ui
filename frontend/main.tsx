@@ -21,8 +21,8 @@ function ThemedApp() {
     <div 
       style={{
         minHeight: '100vh',
-        backgroundColor: theme === 'light' ? '#ffffff' : '#1a202c',
-        color: theme === 'light' ? '#1a202c' : '#ffffff',
+        backgroundColor: theme === 'light' ? '#ffffff' : '#6128b6',
+        color: theme === 'light' ? '#6128b6' : '#ffffff',
       }}
     >
       <App />

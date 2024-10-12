@@ -32,8 +32,8 @@ export function Header() {
             {/* <ChainReactionIcon /> */}
             <img className="w-16 h-16" src="./favicon.png" alt="" />
             {/* <h1 className="text-2xl font-bold text-gray-800 dark:text-white">PlayStop.fun</h1> */}
-            
-            <h1 className="text-2xl font-bold text-gray-800 dark:text-[#46dc8e]">PlayStop.fun</h1>
+            {/* dark:text-[#46dc8e] */}
+            <h1 className="text-2xl font-bold text-gray-800 dark:text-white">PlayStop.fun</h1>
 
           </div>
           
