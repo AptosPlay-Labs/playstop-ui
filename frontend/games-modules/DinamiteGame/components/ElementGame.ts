@@ -3,25 +3,35 @@ import { fabric } from 'fabric';
 
 
 export const setupDecorativeElements = (fabricCanvas: fabric.Canvas) => {
-    const cactus1 = createCactus(50, 50);
-    const cactus2 = createCactus(350, 350);
-    const rock1 = createRock(350, 50);
-    const rock2 = createRock(50, 350);
+    createCactus(0, 0, fabricCanvas);
+    createCactus(290, 290, fabricCanvas);
+    createRock(300, 0, fabricCanvas);
+    createRock(0, 300, fabricCanvas);
 
-    fabricCanvas.add(cactus1, cactus2, rock1, rock2);
+    // fabricCanvas.add(rock1, rock2);
 };
 
-export const createCactus = (x: number, y: number) => {
-    return new fabric.Rect({
-      left: x,
-      top: y,
-      width: 20,
-      height: 40,
-      fill: '#2ECC71',
-      rx: 5,
-      ry: 5,
-      selectable: false
-    });
+export const createCactus = (x: number, y: number, fabricCanvas:fabric.Canvas) => {
+    // return new fabric.Rect({
+    //   left: x,
+    //   top: y,
+    //   width: 20,
+    //   height: 40,
+    //   fill: '#2ECC71',
+    //   rx: 5,
+    //   ry: 5,
+    //   selectable: false
+    // });
+    return fabric.Image.fromURL('/objects/tree.png',(img)=>{
+      let imgObject = img.set({ 
+        left: x, 
+        top: y, 
+        scaleX: 0.3,
+        scaleY: 0.3,
+      });
+      fabricCanvas.add(imgObject)
+      fabricCanvas.requestRenderAll()
+    })
 };
 
 
@@ -40,15 +50,26 @@ export const setupArena = (fabricCanvas: fabric.Canvas, arena_radius:number) => 
 };
 
 
-export const createRock = (x: number, y: number) => {
-    return new fabric.Ellipse({
-      left: x,
-      top: y,
-      rx: 20,
-      ry: 15,
-      fill: '#95A5A6',
-      selectable: false
-    });
+export const createRock = (x: number, y: number, fabricCanvas:fabric.Canvas) => {
+    // return new fabric.Ellipse({
+    //   left: x,
+    //   top: y,
+    //   rx: 20,
+    //   ry: 15,
+    //   fill: '#95A5A6',
+    //   selectable: false
+    // });
+
+    return fabric.Image.fromURL('/objects/rock-1.png',(img)=>{
+      let imgObject = img.set({ 
+        left: x, 
+        top: y, 
+        scaleX: 0.3,
+        scaleY: 0.3,
+      });
+      fabricCanvas.add(imgObject)
+      fabricCanvas.requestRenderAll()
+    })
 };  
 
 
