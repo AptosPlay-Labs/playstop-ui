@@ -1,13 +1,9 @@
 //import { useWallet } from "@aptos-labs/wallet-adapter-react";
 
-// Internal Components
-// import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-//import { Header } from "@/components/Header";
-// import { WalletDetails } from "@/components/WalletDetails";
-// import { NetworkInfo } from "@/components/NetworkInfo";
-// import { AccountInfo } from "@/components/AccountInfo";
-// import { TransferAPT } from "@/components/TransferAPT";
-// import { MessageBoard } from "@/components/MessageBoard";
+
+// import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+// import { storage } from '@/config/firebase';
+
 import {Layout} from "@/components/common"
 import { motion } from 'framer-motion';
 import { ReactiveChain } from './ReactiveChain';
@@ -76,7 +72,7 @@ function App() {
         <div className="min-h-screen bg-[#6128b6]">
           {/* <img src="/bg-playstop.gif" className="w-full opacity-[0.85] mt-[-100px]" alt=""/> */}
           <VideoBackground 
-            videoSrc="/bg-playstop.mp4" 
+            videoSrc="https://firebasestorage.googleapis.com/v0/b/chainreaction-dd626.appspot.com/o/bg-playstop.mp4?alt=media&token=6c9ce821-7459-4e2c-a92d-595bd13715e4" 
             fallbackImageSrc="/bg-playstop.png"
           />
           <div className="max-w-7xl mx-auto p-8"> 

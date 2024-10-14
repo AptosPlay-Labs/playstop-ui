@@ -3,6 +3,7 @@
 import { initializeApp } from "firebase/app";
 import { getAnalytics, type Analytics } from "firebase/analytics";
 import { getFirestore } from 'firebase/firestore'
+import { getStorage } from 'firebase/storage'
 
 // Configuración de tu aplicación web de Firebase
 const firebaseConfig = {
@@ -19,7 +20,7 @@ const firebaseConfig = {
 // Inicializa Firebase
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app)
-
+const storage = getStorage(app);  // Inicializa Firebase Storage
 
 // Inicializa Analytics solo si se ejecuta en el cliente y Firebase Analytics está disponible
 let analytics: Analytics | undefined;
@@ -28,4 +29,4 @@ if(typeof window !== "undefined" && firebaseConfig.measurementId) {
   analytics = getAnalytics(app);
 }
 
-export { app, analytics, db };
+export { app, analytics, db, storage};
