@@ -11,10 +11,12 @@
 import {Layout} from "@/components/common"
 import { motion } from 'framer-motion';
 import { ReactiveChain } from './ReactiveChain';
+
 // import { useState } from "react";
 import { notificateStore } from "./store/notificateStore";
 // import DinamiteGame from "./DinamiteGame";
 import { DinamiteGameFabric } from "./DinamiteGameFabric";
+import VideoBackground from "./components/common/VideoBackground";
 // import { DinamiteGame } from "./games-modules/DinamiteGame/DinamiteGame";
 // import DinamiteReactPixi from "./DinamiteReactPixi";
 // import DinamiteGameV2 from "./DinamiteGameV2";
@@ -72,9 +74,13 @@ function App() {
       {(!selectedGame) && (      
         // bg-gradient-to-br from-purple-600 to-indigo-700
         <div className="min-h-screen bg-[#6128b6]">
-          <img src="/bg-playstop.gif" className="w-full opacity-[0.85] mt-[-100px]" alt=""/>
+          {/* <img src="/bg-playstop.gif" className="w-full opacity-[0.85] mt-[-100px]" alt=""/> */}
+          <VideoBackground 
+            videoSrc="/bg-playstop.mp4" 
+            fallbackImageSrc="/bg-playstop.png"
+          />
           <div className="max-w-7xl mx-auto p-8"> 
-            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-4 gap-24 p-20 mt-[-140px]">
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-4 gap-24 p-20 mt-[-170px]">
               {games.map((game, index) => (
                 <div onClick={() => handleCardClick(game.id)} >
                   <GameCard key={index} name={game.name} color={game.color} img={game.img}/>  
