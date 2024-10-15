@@ -8,7 +8,7 @@ export function DinamiteGameFabric() {
     const { currentRoom, isSpectator ,setSelectedGame} = notificateStore();
 
     return (
-        <div>
+        <div className="min-h-screen mt-[-100px] pt-[100px] bg-gradient-to-br from-purple-600 to-yellow-400 ">
             <div className="absolute flex items-center ml-8 mt-4">
               <motion.button 
                 whileHover={{ scale: 1.1 }}

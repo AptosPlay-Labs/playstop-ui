@@ -18,6 +18,7 @@ import { ChainReactionGame } from '@/entry-functions/ChainReactionGame';
 import CreateRoomModal from '../common/CreateRoomModal';
 import { GameButton } from '../ui/GameButton';
 import { toast } from '../ui/use-toast';
+import { motion } from 'framer-motion';
 
 
 export function GameRooms() {
@@ -309,9 +310,16 @@ export function GameRooms() {
                 Create new game room
               </div>
               <div onClick={() => modalCreateRoom(false)}>
+              <motion.button 
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                className="text-white hover:text-yellow-300 transition-colors"
+              >
                 <GameButton onClick={() => { }} color="bg-blue-500" color_hover="bg-blue-550" className='border-blue-700'>
                   Create
                 </GameButton>
+              </motion.button>
+                
               </div>
             </div>
             {roomsNoBet.filter(room => !room.isBettingRoom && (room.totalPlayers - room.players.length !== 2)).map((room) => (
