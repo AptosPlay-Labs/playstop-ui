@@ -300,7 +300,7 @@ export function GameRooms() {
           <Tab>Training Mode</Tab>
           <Tab>Challenge Mode</Tab>
           <Tab>My Wins</Tab>
-          <Tab>Top Players</Tab>
+          {/* <Tab>Top Players</Tab> */}
         </TabList>
 
         <TabPanel>
@@ -435,7 +435,7 @@ export function GameRooms() {
           </div>
         </TabPanel>
 
-        <TabPanel>
+        {/* <TabPanel>
           <div className="max-h-[420px] min-w-[450px] pr-[10px] overflow-y-auto">
             {topPlayers.map((player, index) => (
               <div key={player.wallet} className="border border-green-400 rounded-3xl p-4 mb-4 shadow-md">
@@ -446,7 +446,7 @@ export function GameRooms() {
               </div>
             ))}
           </div>
-        </TabPanel>
+        </TabPanel> */}
       </Tabs>
       <CreateRoomModal
         isOpen={isModalOpen}
