@@ -24,6 +24,7 @@ import { motion } from 'framer-motion';
 export function GameRooms() {
   const [roomsNoBet, setRoomsNoBet] = useState<GameRoom[]>([]);
   const [roomsBet, setRoomsBet] = useState<GameRoom[]>([]);
+  //@ts-ignore
   const [topPlayers, setTopPlayers] = useState<Player[]>([]);
   const [myGames, setMyGames] = useState<any[]>([]); // Add state for MyGames
   const [currentRoom, setCurrentRoom] = useState<any>(null);
