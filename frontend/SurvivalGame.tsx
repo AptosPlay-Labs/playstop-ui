@@ -1,10 +1,26 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { notificateStore } from './store/notificateStore';
 
 const SurvivalGame: React.FC = () => {
+  const { setSelectedGame} = notificateStore();
+
   return (
-    <div className="min-h-screen mt-[-100px] bg-gradient-to-br from-purple-600 to-yellow-400 flex items-center justify-center pt-16 overflow-hidden">
-      
+    
+    <div className="relative min-h-screen mt-[-100px] bg-gradient-to-br from-purple-600 to-yellow-400 flex items-center justify-center pt-16 overflow-hidden">
+      <div className="absolute top-28 left-0 flex items-center ml-8 mt-4">
+        <motion.button 
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          className="text-white hover:text-yellow-300 transition-colors"
+          onClick={()=>setSelectedGame(null)}
+        >
+          <img className="w-16" src="./images/arrow-left.svg" alt="" />
+        </motion.button>
+        
+        <div className="text-2xl font-bold text-white ml-2">Back</div>
+
+      </div>
       <div className="absolute max-w-xl z-0 transform perspective-1000 rotate-x-12">
           <img 
             src="/survival-map.png" 
