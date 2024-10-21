@@ -1,7 +1,8 @@
 import { notificateStore } from "@/store/notificateStore";
 import { motion } from "framer-motion";
-import { DinamiteGame } from "./games-modules/DinamiteGame/DinamiteGame";
+// import { DinamiteGameBot } from "./games-modules/DinamiteGame/DinamiteGameBot";
 import { GameRooms } from "./games-modules/DinamiteGame/GameRooms";
+import { DinamiteGame } from "./games-modules/DinamiteGame/DinamiteGame";
 
 
 export function DinamiteGameFabric() {
@@ -32,6 +33,7 @@ export function DinamiteGameFabric() {
                     {(currentRoom && !isSpectator) && (
                     <div className="mx-2">
                         <DinamiteGame/>
+                        {/* <DinamiteGameBot/> */}
                     </div>
                     )}
                 </div>
