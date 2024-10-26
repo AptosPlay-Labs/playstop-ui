@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { fabric } from 'fabric';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot, updateDoc } from 'firebase/firestore';
 import { db } from '@/config/firebase';
 import { useWallet } from '@aptos-labs/wallet-adapter-react';
 import { changePlayerSVG, setupArena, setupDecorativeElements } from './components/ElementGame';
@@ -39,12 +39,18 @@ const COLORS = ['red', 'blue', 'green', 'yellow', 'purple', 'orange', 'pink', 'c
 const ARENA_RADIUS = 180;
 const PLAYER_RADIUS = 16;
 const BOT_MOVE_INTERVAL = 200; // Interval for bot movement in milliseconds
-const BOT_SPEED = 18; // 20 Increased speed for faster movements
+const BOT_SPEED = 16; // 20 Increased speed for faster movements
 const MIN_BOT_SPEED = 15;
 const MAX_BOT_SPEED = 25;
 const CENTER_X = 200;
 const CENTER_Y = 200;
 
+interface BotTarget {
+  targetId: string;
+  expiresAt: number;
+}
+
+const BOT_PERSISTENCE_DISTANCE = ARENA_RADIUS * 0.8; 
 
 export function DinamiteGameBot() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -80,38 +86,46 @@ export function DinamiteGameBot() {
   const botMoveIntervalRef = useRef<any>(null);
   const { setNotifyCurrentRoom, setIsSpectator } = notificateStore();
   const gifref = useRef<any>(null);
-  
+  const botTargets: Map<string, BotTarget> = new Map();
 
 
   const { account } = useWallet();
 
   useEffect(() => {
-    // gameStateRef.current = gameState;
-    // console.log(gameState)
-    if (gameStateRef.current?.winner && gameStateRef.current.winner !== '' && gameStateRef.current.winner !== null) {
-      playGameAfterStart.current = false;
-      let amount = parseFloat(gameStateRef.current?.betAmount);
-      amount = amount * gameStateRef.current.totalPlayers;
-      setWonAmount(amount);
-      setIsWon(gameStateRef.current?.winnerWallet === account?.address);
-      let statusGame = `${gameStateRef.current.winner}winner`;
-      setStatusContractGame(statusGame);
-      setIsPlayEnd(true);
-      setModalOpen(true);
-    } else {
-      let playerStatus = gameStateRef.current?.players.find(p => p.wallet === account?.address);
-
-      if (gameStateRef.current && playerStatus && playerStatus.isDead) {
-        setIsWon(false);
-        setIsPlayEnd(false);
-        setModalOpen(true);
-      }
-
-      if (gameStateRef.current?.isStart && gameStateRef.current.winner !== ''  &&gameStateRef.current.winner !== null && gameStateRef.current.status === "live" && !playerStatus?.isDead) {
-        playGameAfterStart.current = true;
-      }
+    if (currentRoom &&  account?.address) {
+      const gameRef = doc(db, 'games_ably', currentRoom);
+      const unsubscribe = onSnapshot(gameRef, (doc) => {
+        const gameData = doc.data() as GameState;
+        if (gameData) {
+          // Actualizar el estado local
+          gameStateRef.current = gameData;
+          
+          // Si hay un ganador desde la actualización de Firebase
+          if (gameData.winner && gameData.winner !== '' && gameData.winner !== null) {
+            playGameAfterStart.current = false;
+            let amount = parseFloat(gameData.betAmount);
+            amount = amount * gameData.totalPlayers;
+            setWonAmount(amount);
+            setIsWon(gameData.winnerWallet === account?.address);
+            setStatusContractGame(`${gameData.winner}winner`);
+            setIsPlayEnd(true);
+            setModalOpen(true);
+          }
+          // Si el jugador actual murió (actualización desde Firebase)
+          else {
+            const playerStatus = gameData.players.find(p => p.wallet === account?.address);
+            if (playerStatus?.isDead) {
+              setIsWon(false);
+              setIsPlayEnd(false);
+              setModalOpen(true);
+            }
+          }
+        }
+      });
+  
+      return () => unsubscribe();
     }
-  }, [gameStateRef.current, currentRoom]);
+  }, [currentRoom, account?.address]);
 
   useEffect(() => {
     if (account?.address) {
@@ -202,7 +216,7 @@ export function DinamiteGameBot() {
       //   )
       // };
       const pushAngle = Math.atan2(collidedPlayer.y - newY, collidedPlayer.x - newX);
-      const pushDistance = PLAYER_RADIUS * 3;
+      const pushDistance = PLAYER_RADIUS * 4;
       
       const newCollidedX = collidedPlayer.x + Math.cos(pushAngle) * pushDistance / 2;
       const newCollidedY = collidedPlayer.y + Math.sin(pushAngle) * pushDistance / 2;
@@ -211,10 +225,10 @@ export function DinamiteGameBot() {
       // updatePlayerPosition(canvas, collidedPlayer.id, newCollidedX, newCollidedY, collidedPlayer.angle);
 
       if (player.hasDynamite) {
-        console.log(collidedPlayer.id)
+        // console.log(collidedPlayer.id)
         updateDynamiteHolder(collidedPlayer.id);
       } else if (collidedPlayer.hasDynamite) {
-        console.log(playerId)
+        // console.log(playerId)
         updateDynamiteHolder(playerId!);
       }
       
@@ -472,17 +486,14 @@ export function DinamiteGameBot() {
         }
       }
     }
-    console.log(gameStateRef.current)
     
     const updatedPlayers = Array.from(uniquePlayers.values());
     
     gameStateRef.current = {
       ...gameStateRef.current,
       players: updatedPlayers,
-      dynamiteHolder: newHolderId,
-      explosionTime: Date.now() + getRandomExplosionTime()
+      dynamiteHolder: newHolderId
     };
-
   };
 
   const startDynamitePassing = () => {
@@ -516,26 +527,8 @@ export function DinamiteGameBot() {
   };
 
 
-
   function getDistance(x1: number, y1: number, x2: number, y2: number): number {
     return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
-  }
-
-  function getNearestPlayer(currentBot: Player, players: Player[]): Player | null {
-    let nearestPlayer: Player | null = null;
-    let minDistance = Infinity;
-  
-    players.forEach(player => {
-      if (player.id !== currentBot.id && !player.isDead && !player.isBot) {
-        const distance = getDistance(currentBot.x, currentBot.y, player.x, player.y);
-        if (distance < minDistance) {
-          minDistance = distance;
-          nearestPlayer = player;
-        }
-      }
-    });
-  
-    return nearestPlayer;
   }
 
   function getDynamiteHolder(players: Player[]): Player | null {
@@ -608,6 +601,48 @@ export function DinamiteGameBot() {
     return { angle, duration, lastUpdate: Date.now(), speed };
   }
 
+  function getTargetForBot(currentBot: Player, players: Player[]): Player | null {
+    const currentTime = Date.now();
+    const currentTarget = botTargets.get(currentBot.id);
+  
+    // Si hay un objetivo actual y no ha expirado, intentar mantenerlo
+    if (currentTarget && currentTime < currentTarget.expiresAt) {
+      const targetPlayer = players.find(p => p.id === currentTarget.targetId && !p.isDead);
+      if (targetPlayer) {
+        // Verificar si el objetivo actual está muy lejos
+        const distanceToTarget = getDistance(currentBot.x, currentBot.y, targetPlayer.x, targetPlayer.y);
+        if (distanceToTarget <= BOT_PERSISTENCE_DISTANCE) {
+          return targetPlayer;
+        }
+      }
+    }
+  
+    // Si no hay objetivo válido, calcular uno nuevo
+    const playerDistances: { player: Player; distance: number }[] = [];
+    players.forEach(player => {
+      if (player.id !== currentBot.id && !player.isDead) {
+        const distance = getDistance(currentBot.x, currentBot.y, player.x, player.y);
+        playerDistances.push({ player, distance });
+      }
+    });
+  
+    if (playerDistances.length === 0) return null;
+    if (playerDistances.length === 1) return playerDistances[0].player;
+  
+    // Ordenar por distancia y tomar el segundo más cercano
+    playerDistances.sort((a, b) => a.distance - b.distance);
+    const targetPlayer = playerDistances[1].player;
+  
+    // Establecer nuevo objetivo con duración aleatoria
+    const duration = Math.random() * (5000 - 3000) + 3000;
+    botTargets.set(currentBot.id, {
+      targetId: targetPlayer.id,
+      expiresAt: currentTime + duration
+    });
+  
+    return targetPlayer;
+  }
+
   function moveBots(fabricCanvas: fabric.Canvas) {
     //const currentGameState = gameStateRef.current;
     //if (!gameState || gameState.winner !== null || gameState.winner !== "") return;
@@ -618,14 +653,15 @@ export function DinamiteGameBot() {
       if (bot.isBot && !bot.isDead) {
 
         let targetX: number, targetY: number;
-        let speed = BOT_SPEED //* (0.8 + Math.random() * 0.4); // Variable speed between 80% and 120% of BOT_SPEED
+        let speed = BOT_SPEED * (0.7 + Math.random() * 0.4); // Variable speed between 80% and 120% of BOT_SPEED
   
         if (bot.hasDynamite) {
           // If the bot has the dynamite, chase the nearest player
-          const nearestPlayer = getNearestPlayer(bot, gameStateRef.current.players);
-          if (nearestPlayer) {
-            targetX = nearestPlayer.x;
-            targetY = nearestPlayer.y;
+          // const nearestPlayer = getNearestPlayer(bot, gameStateRef.current.players);
+          const targetPlayer = getTargetForBot(bot, gameStateRef.current.players);
+          if (targetPlayer) {
+            targetX = targetPlayer.x;
+            targetY = targetPlayer.y;
           } else {
             // If no players, move towards the center
             targetX = CENTER_X + (Math.random() - 0.5) * ARENA_RADIUS;
@@ -718,58 +754,120 @@ export function DinamiteGameBot() {
     // }));
   }
 
-  // const updateDynamiteHolderBot = (newHolderId: string) => {
-  //   const uniquePlayers = new Map();
-    
-  //   if (gameStateRef.current?.players) {
-  //     for (let i = gameStateRef.current.players.length - 1; i >= 0; i--) {
-  //       const player = gameStateRef.current.players[i];
-  //       if (!uniquePlayers.has(player.id)) {
-  //         uniquePlayers.set(player.id, {
-  //           ...player,
-  //           hasDynamite: player.id === newHolderId
-  //         });
-  //       }
-  //     }
-  //   }
-    
-  //   const updatedPlayers = Array.from(uniquePlayers.values());
-    
-  //   // setGameState((prevState: any) => ({
-  //   //   ...prevState,
-  //   //   players: updatedPlayers,
-  //   //   dynamiteHolder: newHolderId,
-  //   //   explosionTime: Date.now() + getRandomExplosionTime()
-  //   // }));
-  //   gameStateRef.current = {
-  //     ...gameStateRef.current,
-  //     players: updatedPlayers,
-  //     dynamiteHolder: newHolderId,
-  //     explosionTime: Date.now() + getRandomExplosionTime()
-  //   };
-
-  //   console.log(newHolderId)
-  //   console.log(updatedPlayers)
-    
-  //   const gameRef = doc(db, 'games_ably', currentRoom!);
-  //   updateDoc(gameRef, {
-  //     dynamiteHolder: newHolderId,
-  //     explosionTime: Date.now() + getRandomExplosionTime(),
-  //     players: updatedPlayers
-  //   });
-  // };
-
-  
   const handleCountdownEnd = () => {
     setShowCounter(false);
     playGameAfterStart.current = true;
     startDynamitePassing();
-    // verifyExplotion();
+    const explosionCheckInterval = setInterval(() => {
+      if (canvas) {
+        verifyExplotion(canvas);
+      }
+    }, 100); // Verificar cada 100ms
+
     // Start bot movement
     //botMoveIntervalRef.current = setInterval(() => moveBots(canvas!), BOT_MOVE_INTERVAL);
     botMoveIntervalRef.current = setInterval(() => moveBots(canvas!), BOT_MOVE_INTERVAL);
 
 
+    return () => {
+      clearInterval(explosionCheckInterval);
+      clearInterval(botMoveIntervalRef.current);
+    };
+  }
+
+  function verifyExplotion(fabricCanvas: fabric.Canvas) {
+    const currentTime = Date.now();
+    
+    // Verificar si es tiempo de explosión
+    if (currentTime >= gameStateRef.current.explosionTime) {
+      // Encontrar al jugador con la dinamita
+      const dynamiteHolder = gameStateRef.current.players.find(
+        player => player.hasDynamite && !player.isDead
+      );
+  
+      if (dynamiteHolder) {
+        // Marcar al jugador como muerto
+        const updatedPlayers = gameStateRef.current.players.map(player => {
+          if (player.id === dynamiteHolder.id) {
+            return { ...player, isDead: true, hasDynamite: false };
+          }
+          return player;
+        });
+  
+        // Contar jugadores vivos
+        const alivePlayers = updatedPlayers.filter(p => !p.isDead);
+  
+        // Verificar si el jugador muerto es el usuario actual
+        const currentPlayerDied = dynamiteHolder.wallet === account?.address;
+        if (currentPlayerDied) {
+          setIsWon(false);
+          setIsPlayEnd(false);
+          setModalOpen(true);
+        }
+  
+        if (alivePlayers.length > 1) {
+          // Si hay más de un jugador vivo, asignar nueva dinamita aleatoriamente
+          const randomIndex = Math.floor(Math.random() * alivePlayers.length);
+          const newDynamiteHolder = alivePlayers[randomIndex];
+  
+          updatedPlayers.forEach(player => {
+            player.hasDynamite = player.id === newDynamiteHolder.id;
+          });
+  
+          // Actualizar estado del juego con nuevo holder y nuevo tiempo de explosión
+          gameStateRef.current = {
+            ...gameStateRef.current,
+            players: updatedPlayers,
+            dynamiteHolder: newDynamiteHolder.id,
+            explosionTime: Date.now() + getRandomExplosionTime()
+          };
+        } else if (alivePlayers.length === 1) {
+          // Declarar ganador
+          const winner = alivePlayers[0];
+          gameStateRef.current = {
+            ...gameStateRef.current,
+            players: updatedPlayers,
+            winner: winner.id,
+            winnerWallet: winner.wallet,
+            status: "completed"
+          };
+  
+          // Mostrar modal de victoria/derrota
+          let amount = parseFloat(gameStateRef.current.betAmount);
+          amount = amount * gameStateRef.current.totalPlayers;
+          setWonAmount(amount);
+          setIsWon(winner.wallet === account?.address);
+          setStatusContractGame(`${winner.id}winner`);
+          setIsPlayEnd(true);
+          setModalOpen(true);
+        }
+  
+        // Actualizar el canvas
+        updateCanvas(fabricCanvas);
+  
+        // Si hay un ganador, detener el juego
+        if (alivePlayers.length <= 1) {
+          clearInterval(botMoveIntervalRef.current);
+          if (startDynamitePassingTimeoutRef.current) {
+            clearTimeout(startDynamitePassingTimeoutRef.current);
+          }
+          playGameAfterStart.current = false;
+        }
+  
+        // Actualizar en Firebase si es necesario
+        if (currentRoom) {
+          const gameRef = doc(db, 'games_ably', currentRoom);
+          updateDoc(gameRef, {
+            players: updatedPlayers,
+            dynamiteHolder: alivePlayers.length > 1 ? gameStateRef.current.dynamiteHolder : null,
+            explosionTime: alivePlayers.length > 1 ? gameStateRef.current.explosionTime : 0,
+            winner: gameStateRef.current.winner,
+            winnerWallet: gameStateRef.current.winnerWallet,
+            status: gameStateRef.current.status
+          });
+        }
+      }
+    }
   }
 
   return (
