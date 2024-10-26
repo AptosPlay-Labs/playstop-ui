@@ -6,7 +6,7 @@
 
 import {Layout} from "@/components/common"
 import { motion } from 'framer-motion';
-import { ReactiveChain } from './ReactiveChain';
+import { ReactiveChainFirebase } from './ReactiveChainFirebase';
 
 // import { useState } from "react";
 import { notificateStore } from "./store/notificateStore";
@@ -61,7 +61,7 @@ function App() {
     <Layout>
       {/* <ColorWar/> */}
       {(selectedGame=="reactive-chain") && (
-          <ReactiveChain/>
+          <ReactiveChainFirebase/>
       )}
       {(selectedGame=="dinamite") && (
           

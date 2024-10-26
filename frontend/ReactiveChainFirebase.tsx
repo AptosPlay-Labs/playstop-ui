@@ -1,10 +1,11 @@
-import { GameBoard, GameRooms, GameBoardVisual } from "@/components/modules";
+import { GameRooms, GameBoardVisual } from "@/components/modules";
 import { notificateStore } from "@/store/notificateStore";
 import { motion } from "framer-motion";
 import { FloatingBubbles } from './components/common/FloatingBubbles';
+import { ChainRectionBoard } from "./components/modules/ChainRectionBoard";
 
 
-export function ReactiveChain() {
+export function ReactiveChainFirebase() {
     const { currentRoom, isSpectator, setSelectedGame } = notificateStore();
 
     return (
@@ -35,7 +36,8 @@ export function ReactiveChain() {
                     )}
                     {(currentRoom && !isSpectator) && (
                     <div className="mx-2">
-                        <GameBoard/>
+                        {/* <ChainReaction/> */}
+                        <ChainRectionBoard/>
                     </div>
                     )}
                     {(currentRoom && isSpectator) && (

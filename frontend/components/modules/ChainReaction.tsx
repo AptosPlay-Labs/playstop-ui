@@ -17,7 +17,7 @@ import { toast } from '../ui/use-toast';
 import { ChainReactionGame } from '@/entry-functions/ChainReactionGame';
 import { aptosClient } from '@/utils/aptosClient';
 
-export function GameBoard() {
+export function ChainReaction() {
   const [onlyValidation, setOnlyValidation] = useState(0);
   const { account, signAndSubmitTransaction } = useWallet();
   const startCountRef = useRef<any>(0);
